@@ -75,3 +75,21 @@ test('cli guide prints agent instructions without a daemon', () => {
   assert.equal(r.code, 0);
   assert.match(r.out, /pdfpin add --text/);
 });
+
+test('a foreign pdfpin daemon on the default port does not block a second home', async () => {
+  const { createServer } = await import('../src/server/index.js');
+  const homeA = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfpin-a-'));
+  const homeB = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfpin-b-'));
+  const a = await createServer({ home: homeA, port: 0 });
+  const env = { PDFPIN_HOME: homeB, PDFPIN_PORT: String(a.port) };
+  try {
+    const pdf = await makeFixturePdf(homeB);
+    const open = run(['open', pdf, '--no-browser'], env);
+    assert.equal(open.code, 0, open.err);
+    const info = JSON.parse(fs.readFileSync(path.join(homeB, 'server.json'), 'utf8'));
+    assert.notEqual(info.port, a.port);
+  } finally {
+    run(['stop'], env);
+    await a.close();
+  }
+});

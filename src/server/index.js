@@ -214,8 +214,8 @@ async function main() {
   } catch (e) {
     if (e.code !== 'EADDRINUSE') { console.error('failed to start', e); process.exit(1); }
     // Another pdfpin daemon may have won the race for the port: defer to it instead of forking a second one.
-    const other = await fetch(`http://127.0.0.1:${port}/api/health`).then((r) => r.json()).catch(() => null);
-    if (other?.ok) { console.log(`another pdfpin daemon already serves port ${port}; exiting`); process.exit(0); }
+    const other = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(1500) }).then((r) => r.json()).catch(() => null);
+    if (other?.ok && other.home === home) { console.log(`another pdfpin daemon already serves port ${port}; exiting`); process.exit(0); }
     handle = await createServer({ home, port: 0, onShutdown: shutdown });
   }
   fs.writeFileSync(serverInfoPath(home), JSON.stringify({ port: handle.port, pid: process.pid, startedAt: stamp(), version: VERSION, url: handle.url }, null, 2));
