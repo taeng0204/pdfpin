@@ -74,6 +74,7 @@ export async function initViewer({ viewerEl, pagesEl, fileUrl }) {
     zoomStep(v, e.deltaY < 0 ? 1 : -1);
   }, { passive: false });
 
+  v.ensureFonts = (ps) => ensureFonts(v, ps);
   v.setZoom = (mode, opts) => setZoom(v, mode, opts);
   v.zoomStep = (dir) => zoomStep(v, dir);
   v.scrollToPage = (n) => scrollToPage(v, n);
@@ -158,6 +159,7 @@ async function renderCanvas(v, ps) {
   ps.canvas = canvas;
   ps.rendered = key;
   ps.el.classList.remove('unrendered');
+  ensureFonts(v, ps); // fonts are loaded now; relayout the text layer once if it predates them
 }
 
 function releaseCanvas(ps) {
@@ -169,19 +171,40 @@ function releaseCanvas(ps) {
 }
 
 async function buildTextLayer(v, ps) {
-  // Fetching the operator list makes pdf.js load the page's embedded fonts, so the text layer
-  // (and therefore highlight rects) is laid out with the real glyph widths instead of fallbacks.
-  try { await ps.page.getOperatorList(); } catch { /* rendering will report the problem */ }
-  const content = await ps.page.getTextContent();
-  ps.items = textItems(content);
-  ps.index = { page: ps.num, items: ps.items, ...buildPageText(ps.items) };
+  const content = ps.content || (ps.content = await ps.page.getTextContent());
+  if (!ps.items) {
+    ps.items = textItems(content);
+    ps.index = { page: ps.num, items: ps.items, ...buildPageText(ps.items) };
+  }
+  ps.textLayer?.cancel();
+  ps.textEl.replaceChildren();
   const tl = new v.pdfjs.TextLayer({ textContentSource: content, container: ps.textEl, viewport: ps.page.getViewport({ scale: v.scale }) });
   await tl.render();
-  try { await document.fonts.ready; } catch { /* ignore */ }
   ps.textLayer = tl;
+  ps.spanIndex = new WeakMap();
   tl.textDivs.forEach((div, i) => ps.spanIndex.set(div, i));
+  ps.textLayerFonts = ps.fontsReady;
   ps._resolveText();
   emit('textlayer', ps);
+}
+
+/**
+ * Make sure the page's embedded fonts are loaded and the text layer was laid out with them.
+ * Fetching the operator list is what makes pdf.js load fonts; it is cached, so pages that were
+ * rendered already pay nothing. Only pages with highlights or search hits need this.
+ */
+async function ensureFonts(v, ps) {
+  if (ps.fontsReady) { await ps.fontsJob; return; }
+  if (!ps.fontsJob) {
+    ps.fontsJob = (async () => {
+      try { await ps.page.getOperatorList(); } catch { /* rendering will surface the error */ }
+      try { await document.fonts.ready; } catch { /* ignore */ }
+      ps.fontsReady = true;
+      await ps.textReady;
+      if (!ps.textLayerFonts) await buildTextLayer(v, ps);
+    })();
+  }
+  await ps.fontsJob;
 }
 
 function updateCurrentPage(v) {

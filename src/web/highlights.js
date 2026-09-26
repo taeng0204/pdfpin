@@ -17,6 +17,7 @@ export function initHighlights(viewer, docApi) {
     if (!ps) return a.rects || [];
     if (!a.anchor) return a.rects || [];
     await ps.textReady;
+    await viewer.ensureFonts(ps);
     if (!ps.textLayer) return a.rects || [];
     const rects = pageRects(ps, a.anchor);
     if (rects.length) {

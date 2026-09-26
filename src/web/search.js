@@ -31,7 +31,10 @@ export function initSearch({ viewer, highlights }) {
     for (const ps of viewer.pages) {
       await ps.textReady;
       if (!ps.index || lastQuery !== q) continue;
-      for (const h of search(ps.index.text, q, { fuzzy: false })) {
+      const found = search(ps.index.text, q, { fuzzy: false });
+      if (found.length) await viewer.ensureFonts(ps);
+      if (lastQuery !== q) continue;
+      for (const h of found) {
         const anchor = offsetsToAnchor(ps.index, h.start, h.end);
         const rects = computeDomRects(ps, anchor);
         if (rects.length) hits.push({ page: ps.num, anchor, rects });

@@ -32,7 +32,7 @@ function detach(cmd, args, opts = {}) {
 
 export function openDefaultBrowser(url) {
   if (process.platform === 'darwin') return detach('open', [url]);
-  if (process.platform === 'win32') return detach('cmd', ['/c', 'start', '""', url.replace(/&/g, '^&')]);
+  if (process.platform === 'win32') return detach('cmd.exe', ['/c', 'start', '""', url.replace(/&/g, '^&')], { windowsVerbatimArguments: true });
   return detach('xdg-open', [url]);
 }
 
