@@ -126,10 +126,35 @@ export function search(pageText, query, opts = {}) {
     hits.push({ ...toRaw(idx, idx + q.text.length), score: 1, exact: true });
     idx += q.text.length;
   }
-  if (hits.length) return hits;
+  if (hits.length || opts.fuzzy === false) return hits;
 
   const maxEdits = opts.maxEdits ?? Math.max(2, Math.floor(q.text.length * 0.2));
   const f = fuzzyFind(p.text, q.text, maxEdits);
   if (!f || f.end <= f.start) return [];
   return [{ ...toRaw(f.start, f.end), score: Math.max(0, 1 - f.dist / q.text.length), exact: false }];
+}
+
+function trigrams(text) {
+  const set = new Set();
+  const t = normalize(text).text;
+  for (let i = 0; i + 3 <= t.length; i++) set.add(t.slice(i, i + 3));
+  return set;
+}
+
+/**
+ * Rank candidates ({ text, ... }) by the share of the query's trigrams they contain.
+ * Cheap pre-filter used to pick which pages deserve a fuzzy search.
+ */
+export function rankByOverlap(query, candidates) {
+  const q = trigrams(query);
+  if (!q.size) return [...candidates];
+  return candidates
+    .map((c) => {
+      const t = trigrams(c.text);
+      let shared = 0;
+      for (const g of q) if (t.has(g)) shared++;
+      return { c, score: shared / q.size };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map((x) => x.c);
 }

@@ -1,0 +1,175 @@
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { makeFixturePdf } from './helpers/fixture.js';
+import { createServer } from '../src/server/index.js';
+
+let base;
+let handle;
+let pdfPath;
+let docId;
+
+const api = async (method, url, body) => {
+  const res = await fetch(base + url, {
+    method,
+    headers: body ? { 'content-type': 'application/json' } : {},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const text = await res.text();
+  let json = null;
+  try { json = JSON.parse(text); } catch { /* not json */ }
+  return { status: res.status, json, text, headers: res.headers };
+};
+
+before(async () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfpin-srv-'));
+  pdfPath = await makeFixturePdf(home);
+  handle = await createServer({ home, port: 0 });
+  base = `http://127.0.0.1:${handle.port}`;
+});
+
+after(async () => {
+  await handle.close();
+});
+
+test('health endpoint answers', async () => {
+  const r = await api('GET', '/api/health');
+  assert.equal(r.status, 200);
+  assert.equal(r.json.ok, true);
+});
+
+test('opening a document registers it as current', async () => {
+  const r = await api('POST', '/api/docs', { path: pdfPath });
+  assert.equal(r.status, 200, r.text);
+  docId = r.json.doc.id;
+  assert.equal(r.json.doc.pages, 2);
+  assert.equal(r.json.doc.title, 'Fixture Paper');
+  const cur = await api('GET', '/api/docs/current');
+  assert.equal(cur.json.doc.id, docId);
+});
+
+test('opening a missing file is a 404', async () => {
+  const r = await api('POST', '/api/docs', { path: '/nope/missing.pdf' });
+  assert.equal(r.status, 404);
+  assert.match(r.json.error, /not found/i);
+});
+
+test('text endpoint returns selected pages', async () => {
+  const r = await api('GET', `/api/docs/${docId}/text?pages=2`);
+  assert.equal(r.status, 200);
+  assert.equal(r.json.pages.length, 1);
+  assert.equal(r.json.pages[0].page, 2);
+  assert.match(r.json.pages[0].text, /Page two/);
+});
+
+test('find endpoint lists every hit with page and context', async () => {
+  const r = await api('GET', `/api/docs/${docId}/find?q=fuzzing`);
+  assert.equal(r.status, 200);
+  assert.equal(r.json.hits.length, 2);
+  assert.equal(r.json.hits[0].page, 2);
+  assert.match(r.json.hits[0].context, /fuzzing/);
+});
+
+test('adding an annotation by quote anchors it with rects', async () => {
+  const r = await api('POST', `/api/docs/${docId}/annotations`, { text: 'higher code coverage than KLEE', note: 'Coverage claim', color: 'green', tag: 'evidence' });
+  assert.equal(r.status, 201, r.text);
+  const a = r.json.annotation;
+  assert.equal(a.page, 1);
+  assert.equal(a.quote, 'higher code coverage than KLEE');
+  assert.equal(a.color, 'green');
+  assert.ok(a.rects.length >= 1);
+  assert.equal(a.rectsSource, 'approx');
+  assert.ok(a.anchor.endChar > a.anchor.startChar || a.anchor.endItem > a.anchor.startItem);
+});
+
+test('adding with --all highlights every occurrence', async () => {
+  const r = await api('POST', `/api/docs/${docId}/annotations`, { text: 'fuzzing', note: 'x', all: true });
+  assert.equal(r.status, 201, r.text);
+  assert.equal(r.json.annotations.length, 2);
+});
+
+test('a quote that is not in the document yields 422 with suggestions', async () => {
+  const r = await api('POST', `/api/docs/${docId}/annotations`, { text: 'quantum gravity waveguide', note: '' });
+  assert.equal(r.status, 422);
+  assert.match(r.json.error, /not found/i);
+  assert.ok(Array.isArray(r.json.suggestions));
+});
+
+test('batch add reports per-item results without aborting', async () => {
+  const r = await api('POST', `/api/docs/${docId}/annotations`, [
+    { text: 'Hello World', note: 'greeting' },
+    { text: 'zzz nowhere zzz', note: 'nope' },
+  ]);
+  assert.equal(r.status, 200, r.text);
+  assert.equal(r.json.results.length, 2);
+  assert.equal(r.json.results[0].ok, true);
+  assert.equal(r.json.results[1].ok, false);
+});
+
+test('SSE stream delivers annotation events', async () => {
+  const ctrl = new AbortController();
+  const res = await fetch(`${base}/api/docs/${docId}/events`, { signal: ctrl.signal });
+  assert.equal(res.headers.get('content-type'), 'text/event-stream');
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  const posted = await api('POST', `/api/docs/${docId}/annotations`, { text: 'Second line', note: 'sse' });
+  assert.equal(posted.status, 201);
+  let buf = '';
+  const deadline = Date.now() + 3000;
+  while (!buf.includes('annotation.added') && Date.now() < deadline) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value);
+  }
+  ctrl.abort();
+  assert.match(buf, /event: annotation\.added/);
+  assert.match(buf, new RegExp(posted.json.annotation.id));
+});
+
+test('patching rects marks them as DOM-sourced', async () => {
+  const created = await api('POST', `/api/docs/${docId}/annotations`, { text: 'Page two', note: '' });
+  const id = created.json.annotation.id;
+  const r = await api('PATCH', `/api/docs/${docId}/annotations/${id}`, { rects: [{ x: 1, y: 2, w: 3, h: 4 }], note: 'edited' });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.annotation.rectsSource, 'dom');
+  assert.equal(r.json.annotation.note, 'edited');
+  const del = await api('DELETE', `/api/docs/${docId}/annotations/${id}`);
+  assert.equal(del.status, 200);
+  assert.equal((await api('DELETE', `/api/docs/${docId}/annotations/${id}`)).status, 404);
+});
+
+test('summary can be set, read and cleared', async () => {
+  const r = await api('PUT', `/api/docs/${docId}/summary`, { title: 'Evidence for X', body: '**three** passages' });
+  assert.equal(r.status, 200);
+  assert.equal((await api('GET', `/api/docs/${docId}`)).json.doc.summary.title, 'Evidence for X');
+  assert.equal((await api('DELETE', `/api/docs/${docId}/summary`)).status, 200);
+  assert.equal((await api('GET', `/api/docs/${docId}`)).json.doc.summary, null);
+});
+
+test('focus accepts a page or an annotation id', async () => {
+  assert.equal((await api('POST', `/api/docs/${docId}/focus`, { page: 2 })).status, 200);
+  assert.equal((await api('POST', `/api/docs/${docId}/focus`, { page: 99 })).status, 400);
+});
+
+test('clearing annotations by tag removes only that tag', async () => {
+  const r = await api('DELETE', `/api/docs/${docId}/annotations?tag=evidence`);
+  assert.equal(r.status, 200);
+  assert.equal(r.json.removed, 1);
+  const all = await api('DELETE', `/api/docs/${docId}/annotations`);
+  assert.ok(all.json.removed >= 1);
+});
+
+test('viewer page and vendor assets are served', async () => {
+  const page = await api('GET', `/view/${docId}`);
+  assert.equal(page.status, 200);
+  assert.match(page.headers.get('content-type'), /text\/html/);
+  assert.match(page.text, /id="app"/);
+  const js = await api('GET', '/vendor/pdfjs/pdf.mjs');
+  assert.equal(js.status, 200);
+  assert.match(js.headers.get('content-type'), /javascript/);
+  const file = await fetch(`${base}/api/docs/${docId}/file`);
+  assert.equal(file.headers.get('content-type'), 'application/pdf');
+  assert.equal((await api('GET', '/assets/../package.json')).status, 404);
+});

@@ -68,3 +68,20 @@ test('search does not confuse a fuzzy hit for a much longer page', () => {
   assert.equal(hits.length, 1);
   assert.equal(page.slice(hits[0].start, hits[0].end), 'quick brown fox jumps over the lazy');
 });
+
+test('search can be restricted to exact matches', () => {
+  const page = 'We evaluated Eclipser against current fuzzers.';
+  assert.deepEqual(search(page, 'evaluated Eclipsr against', { fuzzy: false }), []);
+  assert.equal(search(page, 'evaluated Eclipser against', { fuzzy: false }).length, 1);
+});
+
+test('rankByOverlap orders candidates by shared trigrams with the query', async () => {
+  const { rankByOverlap } = await import('../src/server/matcher.js');
+  const pages = [
+    { page: 1, text: 'kernel scheduling and memory management' },
+    { page: 2, text: 'grey-box concolic testing on binary code' },
+    { page: 3, text: 'concolic execution for binaries' },
+  ];
+  const ranked = rankByOverlap('concolic testing binary', pages);
+  assert.deepEqual(ranked.map((p) => p.page), [2, 3, 1]);
+});
