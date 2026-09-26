@@ -81,3 +81,19 @@ test('list reports every document with its annotation count', () => {
   assert.equal(rows[0].annotationCount, 1);
   assert.equal(rows[0].current, true);
 });
+
+test('removeDocument deletes the record and clears current when needed', () => {
+  const doc = store.openDocument(meta);
+  assert.equal(store.removeDocument(doc.id), true);
+  assert.equal(store.get(doc.id), null);
+  assert.equal(store.current(), null);
+  assert.equal(store.removeDocument(doc.id), false);
+});
+
+test('list exposes whether the file still exists and the summary title', () => {
+  const doc = store.openDocument({ path: '/papers/gone.pdf', title: 'Gone', pages: 1 });
+  store.setSummary(doc.id, { title: 'Evidence for X', body: '' });
+  const row = store.list().find((d) => d.id === doc.id);
+  assert.equal(row.exists, false);
+  assert.equal(row.summaryTitle, 'Evidence for X');
+});

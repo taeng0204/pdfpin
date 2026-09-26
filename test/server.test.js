@@ -208,3 +208,18 @@ test('requests with a foreign Host header are refused (DNS-rebinding guard)', as
   });
   assert.equal(status, 403);
 });
+
+test('activate makes a document current without reopening it, and delete removes it', async () => {
+  const other = await makeFixturePdf(fs.mkdtempSync(path.join(os.tmpdir(), 'pdfpin-other-')));
+  const opened = await api('POST', '/api/docs', { path: other });
+  const otherId = opened.json.doc.id;
+  assert.equal((await api('GET', '/api/docs/current')).json.doc.id, otherId);
+  const act = await api('POST', `/api/docs/${docId}/activate`);
+  assert.equal(act.status, 200);
+  assert.equal((await api('GET', '/api/docs/current')).json.doc.id, docId);
+  const list = await api('GET', '/api/docs');
+  assert.ok(list.json.docs.find((d) => d.id === otherId && d.exists === true));
+  const del = await api('DELETE', `/api/docs/${otherId}`);
+  assert.equal(del.status, 200);
+  assert.equal((await api('GET', `/api/docs/${otherId}`)).status, 404);
+});

@@ -263,6 +263,17 @@ export class DocManager {
     return { page: p };
   }
 
+  activate(doc) {
+    return this.store.activate(doc.id);
+  }
+
+  async removeDocument(docRecord) {
+    const cached = this.pdfs.get(docRecord.id);
+    if (cached) { this.pdfs.delete(docRecord.id); await closePdf(cached.pdf); }
+    this.store.removeDocument(docRecord.id);
+    this.hub.broadcast(docRecord.id, 'doc.removed', { id: docRecord.id });
+  }
+
   async close() {
     for (const { pdf } of this.pdfs.values()) await closePdf(pdf);
     this.pdfs.clear();

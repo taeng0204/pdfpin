@@ -76,7 +76,11 @@ export class Store {
         title: doc.title,
         pages: doc.pages,
         openedAt: doc.openedAt,
+        updatedAt: doc.updatedAt,
         annotationCount: doc.annotations.length,
+        summaryTitle: doc.summary?.title || '',
+        tags: [...new Set(doc.annotations.map((a) => a.tag).filter(Boolean))],
+        exists: fs.existsSync(doc.path),
         current: doc.id === this.state.currentDocId,
       });
     }
@@ -90,6 +94,24 @@ export class Store {
   setCurrent(id) {
     this.state.currentDocId = id;
     this._saveState();
+  }
+
+  /** Mark an already-known document as current and bump its openedAt (used by the viewer's history). */
+  activate(id) {
+    const doc = this.get(id);
+    if (!doc) return null;
+    doc.openedAt = new Date().toISOString();
+    this._save(doc);
+    this.setCurrent(id);
+    return doc;
+  }
+
+  removeDocument(id) {
+    if (!this.get(id)) return false;
+    this.cache.delete(id);
+    try { fs.unlinkSync(this._file(id)); } catch { return false; }
+    if (this.state.currentDocId === id) this.setCurrent(null);
+    return true;
   }
 
   /** Find a document by id, absolute path, or bare file name. */
