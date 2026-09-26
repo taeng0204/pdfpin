@@ -45,8 +45,8 @@
   --line: #2f343b;
   --line-strong: #3d434c;
   --ink: #ebe8e1;
-  --ink-2: #c3beb3;
-  --muted: #858079;
+  --ink-2: #d4cfc4;
+  --muted: #8f8a82;
   --accent: #35bdd6;
   --accent-ink: #7fd8e8;
   --accent-soft: rgba(53, 189, 214, 0.14);
@@ -57,7 +57,7 @@
 }
 :root[data-theme="dark"].dim-pages {
   --hl-blend: lighten;
-  --hl-opacity: 0.45;
+  --hl-opacity: 0.58;
   --search-hit: rgba(53, 189, 214, 0.45);
 }
 
@@ -279,7 +279,7 @@ input { font: inherit; color: inherit; }
   transition: background 120ms, border-color 120ms, color 120ms;
 }
 .chip:hover { border-color: var(--line-strong); color: var(--ink); }
-.chip[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
 .color-filter { display: flex; gap: 6px; align-items: center; }
 .color-filter:empty { display: none; }
 .color-dot {

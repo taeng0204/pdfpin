@@ -110,10 +110,13 @@ export class DocManager {
     const ranked = rankByOverlap(query, indexes).slice(0, 3);
     const out = [];
     for (const idx of ranked) {
-      const maxEdits = Math.ceil(collapse(query).length * 0.5);
-      for (const h of search(idx.text, query, { maxEdits })) out.push(this._hit(idx, h));
+      for (const h of search(idx.text, query, { maxEdits: Infinity })) out.push(this._hit(idx, h));
     }
-    return out.sort((a, b) => b.score - a.score).slice(0, 3).map((h) => ({ page: h.page, score: h.score, context: h.context }));
+    return out
+      .filter((h) => h.score >= 0.4)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map((h) => ({ page: h.page, score: h.score, context: h.context }));
   }
 
   _validateCommon(spec) {
