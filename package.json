@@ -17,7 +17,7 @@
   },
   "scripts": {
     "start": "node src/server/index.js",
-    "test": "node --test test/"
+    "test": "node --test \"test/**/*.test.js\""
   },
   "license": "MIT",
   "dependencies": {
