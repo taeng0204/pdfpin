@@ -40,6 +40,7 @@ export class DocManager {
   }
 
   resolve(ref) {
+    if (ref === 'current') ref = null;
     const doc = this.store.resolve(ref);
     if (!doc) throw new ApiError(404, ref ? `No document matches "${ref}"` : 'No document is open. Run `pdfpin open <file.pdf>` first.');
     return doc;
