@@ -15,6 +15,8 @@ const out = (s = '') => process.stdout.write(`${s}\n`);
 const err = (s = '') => process.stderr.write(`${s}\n`);
 const trunc = (s, n) => (s && s.length > n ? `${s.slice(0, n - 1)}…` : s || '');
 const json = (v) => out(JSON.stringify(v, null, 2));
+/** Shells often deliver a literal backslash-n; agents mean a line break. */
+const unescapeText = (s) => (typeof s === 'string' ? s.replace(/\\r\\n|\\n/g, '\n').replace(/\\t/g, '\t') : s);
 
 program
   .name('pdfpin')
@@ -45,7 +47,10 @@ function printAdded(a, alternatives) {
   const tag = a.tag ? `  #${a.tag}` : '';
   const score = a.score < 1 ? `  (fuzzy ${Math.round(a.score * 100)}%)` : '';
   out(`✔ ${a.id}  p.${a.page}  ${a.color}${tag}  "${trunc(a.quote, 70)}"${score}`);
-  if (alternatives?.length) out(`  ↳ also on ${alternatives.map((x) => `p.${x.page}`).join(', ')} — use --page or --all to choose`);
+  if (alternatives?.length) {
+    const pages = [...new Set(alternatives.map((x) => x.page))];
+    out(`  ↳ ${alternatives.length} more match${alternatives.length > 1 ? 'es' : ''} on ${pages.map((p) => `p.${p}`).join(', ')} — use --page or --all to choose`);
+  }
 }
 
 function printNotFound(message, extra) {
@@ -127,7 +132,7 @@ program
       try { spec = JSON.parse(raw); } catch (e) { throw new CliError(`Invalid JSON spec: ${e.message}`); }
     } else {
       if (!opts.text) throw new CliError('Provide --text "<quote>" (or a batch via --json/--from/--stdin). See `pdfpin guide`.');
-      spec = { text: opts.text, note: opts.note, page: opts.page, color: opts.color, tag: opts.tag, title: opts.title, all: !!opts.all };
+      spec = { text: opts.text, note: unescapeText(opts.note), page: opts.page, color: opts.color, tag: opts.tag, title: unescapeText(opts.title), all: !!opts.all };
     }
     const c = await client({ start: false });
     const ref = docRef();
@@ -183,7 +188,7 @@ program
   .action(async (id, opts) => {
     const c = await client({ start: false });
     const patch = {};
-    for (const k of ['note', 'title', 'tag', 'color']) if (opts[k] !== undefined) patch[k] = opts[k];
+    for (const k of ['note', 'title', 'tag', 'color']) if (opts[k] !== undefined) patch[k] = k === 'note' || k === 'title' ? unescapeText(opts[k]) : opts[k];
     if (!Object.keys(patch).length) throw new CliError('Nothing to change.');
     const { annotation } = await c.call('PATCH', `/api/docs/${docRef()}/annotations/${id}`, patch);
     printAdded(annotation);
@@ -219,7 +224,7 @@ program
     const c = await client({ start: false });
     if (opts.clear) { await c.call('DELETE', `/api/docs/${docRef()}/summary`); return out('summary cleared'); }
     if (!opts.title && !opts.body) throw new CliError('Provide --title and/or --body (or --clear).');
-    await c.call('PUT', `/api/docs/${docRef()}/summary`, { title: opts.title || '', body: opts.body || '' });
+    await c.call('PUT', `/api/docs/${docRef()}/summary`, { title: unescapeText(opts.title) || '', body: unescapeText(opts.body) || '' });
     out('summary updated');
   });
 

@@ -1,0 +1,22 @@
+// Inline SVG icons (stroke-based, 24px grid).
+const svg = (body) => `<svg viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+export const icons = {
+  search: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'),
+  up: svg('<path d="m6 15 6-6 6 6"/>'),
+  down: svg('<path d="m6 9 6 6 6-6"/>'),
+  close: svg('<path d="M6 6l12 12M18 6 6 18"/>'),
+  minus: svg('<path d="M5 12h14"/>'),
+  plus: svg('<path d="M12 5v14M5 12h14"/>'),
+  fitWidth: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 12h8m-8 0 2-2m-2 2 2 2m6-2-2-2m2 2-2 2"/>'),
+  fitPage: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 8v8m0-8-2 2m2-2 2 2m-2 6-2-2m2 2 2-2"/>'),
+  sun: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4"/>'),
+  moon: svg('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'),
+  panel: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/>'),
+  copy: svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'),
+  trash: svg('<path d="M4 7h16M10 11v6m4-6v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>'),
+  edit: svg('<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+  download: svg('<path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>'),
+  note: svg('<path d="M4 4h16v12H8l-4 4z"/>'),
+  target: svg('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>'),
+  pin: svg('<path d="M14.5 3.5 20.5 9.5 17 13l.5 4.5-3 1-3-3.5L5 21l-1-1 6-6.5-3.5-3 1-3L12 8z"/>'),
+};
