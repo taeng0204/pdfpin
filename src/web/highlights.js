@@ -1,6 +1,6 @@
 // Highlight overlay: anchors → exact DOM rects via Range, rendering, hover popover, selection pulse.
 import { mergeLineRects } from '/shared/pagetext.js';
-import { state, on, select, emit } from './state.js';
+import { state, on, select, emit, visibleAnnotations } from './state.js';
 import { renderMarkdown } from './markdown.js';
 
 export function initHighlights(viewer, docApi) {
@@ -50,6 +50,7 @@ export function initHighlights(viewer, docApi) {
     g.el.innerHTML = rects.map((r) => `<div class="hl-rect" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px"></div>`).join('');
     if (g.el.parentNode !== ps.hlEl) ps.hlEl.appendChild(g.el);
     current.rects = rects;
+    applyFilter();
   }
 
   function remove(id) {
@@ -124,6 +125,15 @@ export function initHighlights(viewer, docApi) {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !popover.hidden) hidePopover(); });
   viewer.viewerEl.addEventListener('scroll', () => { if (!popover.hidden) hidePopover(); }, { passive: true });
 
+  // page highlights follow the panel filter: everything else fades back
+  function applyFilter() {
+    const { text, tags, colors } = state.filter;
+    const active = text.trim() || tags.size || colors.size;
+    const keep = active ? new Set(visibleAnnotations().map((a) => a.id)) : null;
+    for (const [gid, g] of groups) g.el.classList.toggle('faded', !!keep && !keep.has(gid));
+  }
+  on('filter', applyFilter);
+  on('annotations', () => setTimeout(applyFilter, 0));
   on('select', ({ id }) => {
     for (const [gid, g] of groups) g.el.classList.toggle('selected', gid === id);
     if (pinnedId && pinnedId !== id) hidePopover();

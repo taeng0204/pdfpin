@@ -32,7 +32,7 @@ export function initPanel({ docApi, viewer, highlights }) {
         b.className = 'chip';
         b.textContent = `#${t}`;
         b.setAttribute('aria-pressed', state.filter.tags.has(t));
-        b.onclick = () => { toggle(state.filter.tags, t); renderAll(); };
+        b.onclick = () => { toggle(state.filter.tags, t); renderAll(); emit('filter'); };
         chipsEl.appendChild(b);
       }
     }
@@ -45,7 +45,7 @@ export function initPanel({ docApi, viewer, highlights }) {
         b.className = `color-dot hl-color-${c}`;
         b.title = c;
         b.setAttribute('aria-pressed', state.filter.colors.has(c));
-        b.onclick = () => { toggle(state.filter.colors, c); renderAll(); };
+        b.onclick = () => { toggle(state.filter.colors, c); renderAll(); emit('filter'); };
         colorEl.appendChild(b);
       }
     }
@@ -200,7 +200,7 @@ export function initPanel({ docApi, viewer, highlights }) {
     } catch (err) { toast(err.message, { error: true }); }
   });
 
-  filterInput.addEventListener('input', () => { state.filter.text = filterInput.value; renderCards(); });
+  filterInput.addEventListener('input', () => { state.filter.text = filterInput.value; renderCards(); emit('filter'); });
 
   function renderAll() { renderSummary(); renderFilters(); renderCards(); }
   on('annotations', renderAll);
