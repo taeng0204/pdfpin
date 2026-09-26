@@ -53,8 +53,10 @@ test('cli drives a daemon end to end: open, text, add, list, rm, stop', async ()
     const find = run(['find', 'fuzzing', '--json'], env);
     assert.equal(JSON.parse(find.out).hits.length, 2);
 
-    const summary = run(['summary', '--title', 'Evidence for X', '--body', 'two passages'], env);
+    const summary = run(['summary', '--title', 'Evidence for X', '--body', 'two passages:\\n- a\\n- b'], env);
     assert.equal(summary.code, 0, summary.err);
+    const withSummary = JSON.parse(run(['list', '--json'], env).out);
+    assert.equal(withSummary.doc.summary.body, 'two passages:\n- a\n- b'); // literal \n becomes a line break
 
     const status = run(['status'], env);
     assert.match(status.out, /running/);
