@@ -489,3 +489,32 @@ input { font: inherit; color: inherit; }
 .hist-actions .icon-btn.confirm { color: var(--danger); background: rgba(180, 35, 24, 0.08); }
 .hist-empty { padding: 28px 8px; color: var(--muted); text-align: center; font-size: 13px; }
 @keyframes drawer-in { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ---------- dialog ---------- */
+.dialog-root { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; animation: fade-in 120ms both; }
+.dialog-root.out { animation: fade-out 140ms both; }
+.dialog-backdrop { position: absolute; inset: 0; background: rgba(20, 18, 12, 0.32); backdrop-filter: blur(2px); }
+:root[data-theme="dark"] .dialog-backdrop { background: rgba(0, 0, 0, 0.55); }
+.dialog {
+  position: relative; width: min(420px, 92vw); padding: 20px 22px 16px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-pop); animation: pop-in 160ms cubic-bezier(.2,.7,.2,1) both;
+}
+.dialog-title { margin: 0 0 8px; font: 600 17px/1.3 var(--font-serif); }
+.dialog-body { color: var(--ink-2); font-size: 13.5px; }
+.dialog-body p { margin: 0 0 6px; }
+.dialog-body .muted { color: var(--muted); font-size: 12.5px; }
+.dialog-body strong { color: var(--ink); font-weight: 600; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.dialog-actions .btn { padding: 7px 14px; font-size: 13px; }
+.btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn.danger:hover { filter: brightness(0.92); }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+@keyframes fade-out { to { opacity: 0; } }
+
+/* popover actions (shown when pinned by a click) */
+.popover .pop-actions { display: flex; gap: 4px; justify-content: flex-end; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.popover .pop-actions .tb-btn { border: 0; background: transparent; color: var(--ink-2); padding: 3px 8px; border-radius: 7px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
+.popover .pop-actions .tb-btn:hover { background: var(--surface-2); color: var(--ink); }
+.popover .pop-actions .tb-btn.danger:hover { color: var(--danger); }
+.popover .pop-actions .tb-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.hist:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }

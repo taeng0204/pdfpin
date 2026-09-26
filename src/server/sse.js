@@ -31,6 +31,12 @@ export class SseHub {
     return set.size;
   }
 
+  broadcastAll(event, data) {
+    let n = 0;
+    for (const docId of this.clients.keys()) n += this.broadcast(docId, event, data);
+    return n;
+  }
+
   clientCount(docId) {
     return this.clients.get(docId)?.size ?? 0;
   }

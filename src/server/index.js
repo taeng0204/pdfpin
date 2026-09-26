@@ -81,6 +81,7 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   route('GET', '/api/docs/current', () => ({ doc: withUrls(docs.resolve(null)) }));
   route('GET', '/api/docs/:id', ({ params }) => ({ doc: withUrls(docs.resolve(params.id)) }));
   route('POST', '/api/docs/:id/activate', ({ params }) => ({ doc: withUrls(docs.activate(docs.resolve(params.id))) }));
+  route('POST', '/api/docs/:id/reveal', ({ params }) => docs.reveal(docs.resolve(params.id)));
   route('DELETE', '/api/docs/:id', async ({ params }) => { const d = docs.resolve(params.id); await docs.removeDocument(d); return { ok: true, removed: d.id }; });
   route('GET', '/api/docs/:id/file', ({ params, res }) => {
     const doc = docs.resolve(params.id);

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { openPdf, closePdf, getPageIndex, offsetsToAnchor, anchorToOffsets, approxRects, parsePages } from './pdftext.js';
 import { search, rankByOverlap } from '../shared/matcher.js';
 import { docIdFor } from './store.js';
+import { revealFile } from './reveal.js';
 
 export const COLORS = ['yellow', 'green', 'blue', 'pink', 'purple', 'orange'];
 export const MAX_QUERY = 2000; // characters; keeps the fuzzy DP bounded
@@ -45,6 +46,7 @@ export class DocManager {
     if (prev) await closePdf(prev.pdf);
     const doc = this.store.openDocument({ path: abs, title: pdf.title || path.basename(abs, '.pdf'), pages: pdf.numPages });
     this._remember(doc.id, { pdf, mtimeMs: st.mtimeMs });
+    this.hub.broadcastAll('docs.changed', { id: doc.id, action: 'opened' });
     return doc;
   }
 
@@ -264,7 +266,13 @@ export class DocManager {
   }
 
   activate(doc) {
-    return this.store.activate(doc.id);
+    const d = this.store.activate(doc.id);
+    this.hub.broadcastAll('docs.changed', { id: doc.id, action: 'activated' });
+    return d;
+  }
+
+  reveal(doc) {
+    return { launched: revealFile(doc.path), path: doc.path };
   }
 
   async removeDocument(docRecord) {
@@ -272,6 +280,7 @@ export class DocManager {
     if (cached) { this.pdfs.delete(docRecord.id); await closePdf(cached.pdf); }
     this.store.removeDocument(docRecord.id);
     this.hub.broadcast(docRecord.id, 'doc.removed', { id: docRecord.id });
+    this.hub.broadcastAll('docs.changed', { id: docRecord.id, action: 'removed' });
   }
 
   async close() {

@@ -3,6 +3,7 @@ import { historyApi } from './api.js';
 import { state } from './state.js';
 import { icons } from './icons.js';
 import { toast } from './toast.js';
+import { confirmDialog } from './dialog.js';
 
 export function initHistory() {
   const drawer = document.getElementById('drawer');
@@ -72,7 +73,10 @@ export function initHistory() {
         <div class="hist-meta"><span>${d.pages} pages</span>${notes}<span>${relative(d.openedAt)}</span>${tags}</div>
         ${d.summaryTitle ? '<div class="hist-summary"></div>' : ''}
       </div>
-      <div class="hist-actions"><button class="icon-btn act-remove" title="Forget this document (and its notes)">${icons.trash}</button></div>`;
+      <div class="hist-actions">
+        <button class="icon-btn act-reveal" title="Show in folder">${icons.folder}</button>
+        <button class="icon-btn act-remove" title="Forget this document…">${icons.trash}</button>
+      </div>`;
     el.querySelector('.hist-title').textContent = d.title;
     el.querySelector('.hist-path').textContent = shortPath(d.path);
     el.querySelectorAll('.hist-meta .tag').forEach((t, k) => { t.textContent = `#${d.tags[k]}`; });
@@ -92,26 +96,55 @@ export function initHistory() {
     if (!el) return;
     const d = docs.find((x) => x.id === el.dataset.id);
     if (!d) return;
-    const rm = e.target.closest('.act-remove');
-    if (rm) {
+    if (e.target.closest('.act-reveal')) {
       e.stopPropagation();
-      if (!rm.classList.contains('confirm')) { rm.classList.add('confirm'); rm.title = 'Click again to forget'; setTimeout(() => rm.classList.remove('confirm'), 2200); return; }
-      try {
-        await historyApi.remove(d.id);
-        toast(`Forgot “${d.title}”`, { duration: 2500 });
-        if (d.id === state.docId) { location.href = '/'; return; }
-        await refresh();
-      } catch (err) { toast(err.message, { error: true }); }
+      try { const r = await historyApi.reveal(d.id); if (!r.launched) toast(d.path, { duration: 4000 }); } catch (err) { toast(err.message, { error: true }); }
+      return;
+    }
+    if (e.target.closest('.act-remove')) {
+      e.stopPropagation();
+      await forget(d);
       return;
     }
     openDoc(d);
   });
+  async function forget(d) {
+    const n = d.annotationCount;
+    const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const ok = await confirmDialog({
+      title: 'Forget this document?',
+      body: `<p><strong>${esc(d.title)}</strong></p>` +
+        `<p>${n ? `Its <strong>${n} note${n > 1 ? 's' : ''}</strong> and highlights will be deleted.` : 'It has no notes.'} The PDF file itself stays where it is.</p>` +
+        (n ? '<p class="muted">Tip: export first if you want to keep the notes (panel → download icon).</p>' : ''),
+      confirmText: n ? `Delete ${n} note${n > 1 ? 's' : ''} and forget` : 'Forget',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await historyApi.remove(d.id);
+      toast(`Forgot “${d.title}”`, { duration: 2500 });
+      if (d.id === state.docId) { location.href = '/'; return; }
+      await refresh();
+    } catch (err) { toast(err.message, { error: true }); }
+  }
+
   list.addEventListener('keydown', (e) => {
     const el = e.target.closest('.hist');
-    if (el && e.key === 'Enter') { const d = docs.find((x) => x.id === el.dataset.id); if (d) openDoc(d); }
+    if (!el) return;
+    const rows = [...list.querySelectorAll('.hist')];
+    const i = rows.indexOf(el);
+    if (e.key === 'Enter') { const d = docs.find((x) => x.id === el.dataset.id); if (d) openDoc(d); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); rows[Math.min(i + 1, rows.length - 1)]?.focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); if (i === 0) filter.focus(); else rows[i - 1]?.focus(); }
+    else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); const d = docs.find((x) => x.id === el.dataset.id); if (d) forget(d); }
   });
   filter.addEventListener('input', () => { query = filter.value; render(); });
-  filter.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Escape') close(); if (e.key === 'Enter') { const first = list.querySelector('.hist'); if (first) first.click(); } });
+  filter.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'Escape') close();
+    if (e.key === 'Enter') { const first = list.querySelector('.hist'); if (first) first.click(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); list.querySelector('.hist')?.focus(); }
+  });
   toggle.onclick = () => (isOpen() ? close() : open());
   backdrop.onclick = close;
   document.getElementById('drawer-close').onclick = close;

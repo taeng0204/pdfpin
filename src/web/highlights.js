@@ -2,6 +2,7 @@
 import { mergeLineRects } from '/shared/pagetext.js';
 import { state, on, select, emit, visibleAnnotations } from './state.js';
 import { renderMarkdown } from './markdown.js';
+import { icons } from './icons.js';
 
 export function initHighlights(viewer, docApi) {
   const groups = new Map(); // annotation id -> { el, page }
@@ -9,6 +10,7 @@ export function initHighlights(viewer, docApi) {
   let hoverTimer = null;
   let pinnedId = null;
   const pendingPatch = new Map();
+  let actions = null; // { edit(id), remove(annotation) } supplied by the panel
 
   const pageRects = (ps, anchor) => computeDomRects(ps, anchor);
 
@@ -75,10 +77,13 @@ export function initHighlights(viewer, docApi) {
     setTimeout(() => g.el.classList.remove('pulse'), 1300);
   }
 
-  function showPopover(a, anchorRect) {
+  function showPopover(a, anchorRect, { pinned = false } = {}) {
     popover.className = `popover hl-color-${a.color}`;
     const meta = [`p.${a.page}`, a.tag ? `#${a.tag}` : '', a.source === 'user' ? 'you' : 'agent'].filter(Boolean).join(' · ');
-    popover.innerHTML = `<div class="pop-meta"></div>${a.title ? '<div class="pop-title"></div>' : ''}<div class="md"></div>${a.quote ? '<div class="pop-quote"></div>' : ''}`;
+    const acts = pinned && actions ? `<div class="pop-actions"><button class="tb-btn pop-edit">${icons.edit}<span>Edit</span></button><button class="tb-btn danger pop-del">${icons.trash}<span>Delete</span></button></div>` : '';
+    popover.innerHTML = `<div class="pop-meta"></div>${a.title ? '<div class="pop-title"></div>' : ''}<div class="md"></div>${a.quote ? '<div class="pop-quote"></div>' : ''}${acts}`;
+    popover.querySelector('.pop-edit')?.addEventListener('click', () => { hidePopover(); actions.edit(a.id); });
+    popover.querySelector('.pop-del')?.addEventListener('click', () => { hidePopover(); actions.remove(a); });
     popover.querySelector('.pop-meta').textContent = meta;
     if (a.title) popover.querySelector('.pop-title').textContent = a.title;
     popover.querySelector('.md').innerHTML = a.note ? renderMarkdown(a.note) : '<span style="color:var(--muted)">No note</span>';
@@ -117,7 +122,7 @@ export function initHighlights(viewer, docApi) {
     const a = state.annotations.get(id);
     if (!a) return;
     pinnedId = id;
-    showPopover(a, rect.getBoundingClientRect());
+    showPopover(a, rect.getBoundingClientRect(), { pinned: true });
     select(id, { from: 'page' });
   });
   popover.addEventListener('mouseenter', () => clearTimeout(hoverTimer));
@@ -163,7 +168,7 @@ export function initHighlights(viewer, docApi) {
   }
   function clearSearchHits() { for (const d of searchEls) d.remove(); searchEls.length = 0; }
 
-  return { render, remove, renderAll, pulse, rectsFor, computeDomRects, showSearchHits, clearSearchHits, hidePopover };
+  return { render, remove, renderAll, pulse, rectsFor, computeDomRects, showSearchHits, clearSearchHits, hidePopover, setActions: (a) => { actions = a; } };
 }
 
 /** Exact rects for an anchor using the page's text-layer spans. Page units at scale 1, top-left origin. */

@@ -21,5 +21,7 @@ export const icons = {
   history: svg('<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/>'),
   file: svg('<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/>'),
   warn: svg('<path d="M12 3 2 20h20z"/><path d="M12 9v5m0 3h.01"/>'),
+  folder: svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+  undo: svg('<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>'),
   pin: svg('<path d="M14.5 3.5 20.5 9.5 17 13l.5 4.5-3 1-3-3.5L5 21l-1-1 6-6.5-3.5-3 1-3L12 8z"/>'),
 };

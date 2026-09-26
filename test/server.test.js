@@ -24,6 +24,7 @@ const api = async (method, url, body) => {
 };
 
 before(async () => {
+  process.env.PDFPIN_NO_LAUNCH = '1';
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfpin-srv-'));
   pdfPath = await makeFixturePdf(home);
   handle = await createServer({ home, port: 0 });
@@ -222,4 +223,29 @@ test('activate makes a document current without reopening it, and delete removes
   const del = await api('DELETE', `/api/docs/${otherId}`);
   assert.equal(del.status, 200);
   assert.equal((await api('GET', `/api/docs/${otherId}`)).status, 404);
+});
+
+test('every viewer hears docs.changed when the document list changes', async () => {
+  const ctrl = new AbortController();
+  const res = await fetch(`${base}/api/docs/${docId}/events`, { signal: ctrl.signal });
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  const r = await api('POST', `/api/docs/${docId}/activate`);
+  assert.equal(r.status, 200);
+  let buf = '';
+  const deadline = Date.now() + 3000;
+  while (!buf.includes('docs.changed') && Date.now() < deadline) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value);
+  }
+  ctrl.abort();
+  assert.match(buf, /event: docs\.changed/);
+});
+
+test('reveal is refused for unknown documents and skipped under PDFPIN_NO_LAUNCH', async () => {
+  assert.equal((await api('POST', '/api/docs/nope/reveal')).status, 404);
+  const r = await api('POST', `/api/docs/${docId}/reveal`);
+  assert.equal(r.status, 200);
+  assert.equal(r.json.launched, false);
 });

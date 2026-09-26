@@ -20,6 +20,7 @@ export const historyApi = {
   list: () => api('GET', '/api/docs'),
   activate: (id) => api('POST', `/api/docs/${id}/activate`),
   remove: (id) => api('DELETE', `/api/docs/${id}`),
+  reveal: (id) => api('POST', `/api/docs/${id}/reveal`),
 };
 
 export const docApi = (id) => ({

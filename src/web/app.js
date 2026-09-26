@@ -66,6 +66,7 @@ async function boot() {
   $('loading').hidden = true;
   const highlights = initHighlights(viewer, docApi);
   const panel = initPanel({ docApi, viewer, highlights });
+  highlights.setActions({ edit: panel.edit, remove: panel.removeWithUndo });
   const search = initSearch({ viewer, highlights });
   initSelection({ viewer, docApi });
   initStrip({ viewer });
@@ -149,6 +150,7 @@ async function boot() {
     },
     'doc.reloaded': () => { toast('The PDF changed on disk — reloading', { duration: 1500 }); setTimeout(() => location.reload(), 600); },
     'doc.removed': () => { toast('This document was removed from pdfpin', { duration: 2500 }); setTimeout(() => { location.href = '/'; }, 800); },
+    'docs.changed': () => { if (history.isOpen()) history.refresh(); },
     resync,
   }, (s) => { const c = $('conn'); c.dataset.state = s; c.title = { open: 'Live: connected', connecting: 'Connecting…', error: 'Disconnected' }[s]; });
 

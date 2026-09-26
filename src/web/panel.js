@@ -142,9 +142,7 @@ export function initPanel({ docApi, viewer, highlights }) {
     if (e.target.closest('.act-edit')) { e.stopPropagation(); openEditor(el, a); return; }
     if (e.target.closest('.act-del')) {
       e.stopPropagation();
-      const b = e.target.closest('.act-del');
-      if (!b.classList.contains('confirm')) { b.classList.add('confirm'); b.title = 'Click again to delete'; setTimeout(() => b.classList.remove('confirm'), 2200); return; }
-      try { await docApi.remove(a.id); } catch (err) { toast(err.message, { error: true }); }
+      removeWithUndo(a);
       return;
     }
     if (e.target.closest('textarea, .card-edit-row')) return;
@@ -155,6 +153,16 @@ export function initPanel({ docApi, viewer, highlights }) {
     if (!el || e.target.tagName === 'TEXTAREA') return;
     if (e.key === 'Enter') select(el.dataset.id, { from: 'panel' });
   });
+
+  /** Delete immediately; the toast can bring it back (re-created with the same anchor, rects and text). */
+  async function removeWithUndo(a) {
+    const snapshot = { page: a.page, anchor: a.anchor, rects: a.rects, quote: a.quote, note: a.note, title: a.title, color: a.color, tag: a.tag, source: a.source };
+    try { await docApi.remove(a.id); } catch (err) { toast(err.message, { error: true }); return; }
+    toast('Note deleted', {
+      color: a.color, duration: 7000, action: 'Undo',
+      onAction: async () => { try { await docApi.add(snapshot); } catch (err) { toast(`Could not restore: ${err.message}`, { error: true }); } },
+    });
+  }
 
   async function copyCitation(a) {
     const title = state.doc?.title || 'document';
@@ -217,5 +225,11 @@ export function initPanel({ docApi, viewer, highlights }) {
   });
 
   renderAll();
-  return { renderAll, renderCards, focusFilter: () => filterInput.focus() };
+  return {
+    renderAll, renderCards, focusFilter: () => filterInput.focus(), removeWithUndo,
+    edit(id) {
+      select(id, { from: 'popover' });
+      setTimeout(() => { const el = cardsEl.querySelector(`.card[data-id="${id}"]`); const a = state.annotations.get(id); if (el && a) openEditor(el, a); }, 60);
+    },
+  };
 }
