@@ -21,7 +21,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "commander": "^15.0.0",
+    "commander": "^13.1.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.3.289"
   }

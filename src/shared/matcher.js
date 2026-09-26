@@ -5,6 +5,7 @@ const QUOTES = { '“': '"', '”': '"', '„': '"', '″': '"', '‘': "'", '�
 const DASHES = new Set(['‐', '‑', '‒', '–', '—', '―', '−', '­']);
 const WS = /\s/;
 const LETTER = /\p{L}/u;
+const MARK = /^\p{M}+$/u;
 
 /**
  * Normalise text for matching.
@@ -22,10 +23,12 @@ export function normalize(raw) {
       out = QUOTES[cp];
     } else if (DASHES.has(cp)) {
       out = '-';
+    } else if (MARK.test(cp)) {
+      out = ''; // combining accents: "é" and "e + ◌́" should match
     } else {
       out = cp.normalize('NFKC').toLowerCase();
     }
-    for (const c of out) chars.push({ ch: c, raw: rawIdx, ws: c === ' ' });
+    for (const c of out) if (!MARK.test(c)) chars.push({ ch: c, raw: rawIdx, ws: c === ' ' });
     rawIdx += cp.length;
   }
 

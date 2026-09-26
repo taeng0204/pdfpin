@@ -85,3 +85,10 @@ test('rankByOverlap orders candidates by shared trigrams with the query', async 
   const ranked = rankByOverlap('concolic testing binary', pages);
   assert.deepEqual(ranked.map((p) => p.page), [2, 3, 1]);
 });
+
+test('normalize ignores combining marks so composed and decomposed accents match', () => {
+  const composed = 'café';
+  const decomposed = 'café';
+  assert.equal(search(composed, decomposed).length, 1);
+  assert.equal(search(decomposed, composed).length, 1);
+});

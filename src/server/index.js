@@ -127,15 +127,24 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   }
 
   const server = http.createServer(async (req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const p = decodeURIComponent(url.pathname);
+    let p = '';
     try {
+      const url = new URL(req.url, 'http://localhost');
+      p = decodeURIComponent(url.pathname);
       if (p.startsWith('/api/')) {
         for (const r of routes) {
           if (r.method !== req.method) continue;
           const m = p.match(r.re);
           if (!m) continue;
-          const body = ['POST', 'PUT', 'PATCH'].includes(req.method) ? await readBody(req) : null;
+          let body = null;
+          if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+            // Only JSON declared as JSON: a cross-origin HTML form cannot send this content type
+            // without a CORS preflight, which closes the CSRF hole on the loopback API.
+            const ct = String(req.headers['content-type'] || '');
+            const len = Number(req.headers['content-length'] || 0);
+            if ((len > 0 || req.headers['transfer-encoding']) && !/^application\/json\b/i.test(ct)) throw new ApiError(415, 'Send JSON with content-type: application/json');
+            body = await readBody(req);
+          }
           const out = await r.handler({ params: m.groups || {}, query: url.searchParams, body, req, res });
           if (out !== null && !res.writableEnded && !res.headersSent) send(res, res.statusCode === 200 ? 200 : res.statusCode, out);
           return;
@@ -149,7 +158,9 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
       if (p.startsWith('/vendor/pdfjs/')) return serveFile(res, PDFJS_ROOT, p.slice('/vendor/pdfjs/'.length));
       return send(res, 404, { error: 'Not found' });
     } catch (e) {
+      if (res.writableEnded) return;
       if (e instanceof ApiError) return send(res, e.status, { error: e.message, ...e.extra });
+      if (e instanceof URIError) return send(res, 400, { error: 'Malformed URL' });
       console.error(`[pdfpin] ${req.method} ${p} failed:`, e);
       return send(res, 500, { error: e.message || 'Internal error' });
     }
@@ -202,6 +213,9 @@ async function main() {
     handle = await createServer({ home, port, onShutdown: shutdown });
   } catch (e) {
     if (e.code !== 'EADDRINUSE') { console.error('failed to start', e); process.exit(1); }
+    // Another pdfpin daemon may have won the race for the port: defer to it instead of forking a second one.
+    const other = await fetch(`http://127.0.0.1:${port}/api/health`).then((r) => r.json()).catch(() => null);
+    if (other?.ok) { console.log(`another pdfpin daemon already serves port ${port}; exiting`); process.exit(0); }
     handle = await createServer({ home, port: 0, onShutdown: shutdown });
   }
   fs.writeFileSync(serverInfoPath(home), JSON.stringify({ port: handle.port, pid: process.pid, startedAt: stamp(), version: VERSION, url: handle.url }, null, 2));

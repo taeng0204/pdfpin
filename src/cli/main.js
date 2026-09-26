@@ -106,7 +106,7 @@ program
     const qs = new URLSearchParams({ q: query, limit: String(opts.limit) });
     if (opts.page) qs.set('page', String(opts.page));
     const r = await c.call('GET', `/api/docs/${docRef()}/find?${qs}`);
-    if (opts.json) return json(r);
+    if (opts.json) { json(r); if (!r.hits.length) process.exitCode = 2; return; }
     if (!r.hits.length) throw new CliError(`No match for "${trunc(query, 60)}"`, { exitCode: 2 });
     for (const h of r.hits) out(`p.${h.page}  ${h.exact ? 'exact' : `fuzzy ${Math.round(h.score * 100)}%`}  ${trunc(h.context, 200)}`);
   });

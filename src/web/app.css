@@ -138,7 +138,7 @@ input { font: inherit; color: inherit; }
   border: 1px solid transparent; border-radius: 10px; background: transparent; transition: width 200ms, background 160ms, border-color 160ms;
   width: 36px; overflow: hidden;
 }
-.search[data-open="true"] { width: min(440px, 44vw); background: var(--surface-2); border-color: var(--line); }
+.search[data-open="true"] { width: min(440px, 44vw); background: var(--surface-2); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .search input { flex: 1; min-width: 0; height: 30px; border: 0; background: transparent; padding: 0 4px; }
 .search input:focus { outline: none; }
 .search input::-webkit-search-cancel-button { display: none; }
@@ -298,7 +298,7 @@ input { font: inherit; color: inherit; }
 .page-group-head {
   position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 8px;
   padding: 8px 4px 6px; font: 600 11px var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
-  background: linear-gradient(var(--surface) 78%, transparent);
+  background: linear-gradient(var(--surface) 92%, transparent);
   cursor: pointer;
 }
 .page-group-head:hover { color: var(--ink); }
@@ -379,7 +379,7 @@ input { font: inherit; color: inherit; }
   background: var(--ink); color: var(--surface); border-radius: 12px; box-shadow: var(--shadow-pop); animation: pop-in 140ms both;
 }
 .sel-toolbar[hidden] { display: none; }
-.sel-toolbar .color-dot { opacity: 1; width: 20px; height: 20px; border: 2px solid transparent; box-shadow: none; }
+.sel-toolbar .color-dot { opacity: 1; width: 22px; height: 22px; border: 2px solid transparent; box-shadow: none; }
 .sel-toolbar .color-dot:hover { border-color: var(--surface); }
 .sel-toolbar .sep { width: 1px; height: 18px; background: rgba(255,255,255,0.2); margin: 0 3px; }
 .sel-toolbar .tb-btn { border: 0; background: transparent; color: inherit; padding: 3px 8px; border-radius: 7px; cursor: pointer; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; }

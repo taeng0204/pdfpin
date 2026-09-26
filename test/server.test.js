@@ -173,3 +173,27 @@ test('viewer page and vendor assets are served', async () => {
   assert.equal(file.headers.get('content-type'), 'application/pdf');
   assert.equal((await api('GET', '/assets/../package.json')).status, 404);
 });
+
+test('JSON endpoints refuse bodies that are not declared as JSON (CSRF guard)', async () => {
+  const res = await fetch(`${base}/api/docs`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ path: pdfPath }) });
+  assert.equal(res.status, 415);
+});
+
+test('anchor annotations validate client-supplied rects', async () => {
+  const r = await api('POST', `/api/docs/${docId}/annotations`, { page: 1, anchor: { startItem: 0, startChar: 0, endItem: 0, endChar: 3 }, rects: [{ x: 'a', y: 1, w: 1, h: 1 }] });
+  assert.equal(r.status, 400);
+});
+
+test('huge page ranges are clamped instead of iterated', async () => {
+  const t0 = Date.now();
+  const r = await api('GET', `/api/docs/${docId}/text?pages=1-999999999`);
+  assert.equal(r.status, 200);
+  assert.equal(r.json.pages.length, 2);
+  assert.ok(Date.now() - t0 < 2000);
+});
+
+test('over-long quotes are rejected before any matching work', async () => {
+  const r = await api('POST', `/api/docs/${docId}/annotations`, { text: 'x'.repeat(5000), note: '' });
+  assert.equal(r.status, 400);
+  assert.match(r.json.error, /too long/i);
+});

@@ -155,6 +155,7 @@ async function renderCanvas(v, ps) {
     if (ps.rendering === key) ps.rendering = null;
   }
   if (Math.abs(v.scale - scale) > 1e-6) return; // zoom changed meanwhile; a newer render is on its way
+  if (!ps.visible) return; // scrolled far away while rendering; keep memory low
   ps.canvas.replaceWith(canvas);
   ps.canvas = canvas;
   ps.rendered = key;

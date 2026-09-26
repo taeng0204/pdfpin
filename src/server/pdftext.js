@@ -68,7 +68,9 @@ export function parsePages(spec, max) {
     if (!m) throw new Error(`Invalid page selection: "${part.trim()}"`);
     const a = Number(m[1]);
     const b = m[2] ? Number(m[2]) : a;
-    for (let p = Math.min(a, b); p <= Math.max(a, b); p++) if (p >= 1 && p <= max) set.add(p);
+    const lo = Math.max(1, Math.min(a, b));
+    const hi = Math.min(max, Math.max(a, b));
+    for (let p = lo; p <= hi; p++) set.add(p);
   }
   return [...set].sort((x, y) => x - y);
 }

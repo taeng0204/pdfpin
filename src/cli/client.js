@@ -53,7 +53,7 @@ export async function ensureDaemon({ home = defaultHome(), port = Number(process
   while (Date.now() < deadline) {
     await sleep(120);
     const fresh = readServerInfo(home);
-    if (fresh && fresh.pid === child.pid && (await healthy(fresh.port))) return fresh;
+    if (fresh && (await healthy(fresh.port))) return fresh; // ours, or a sibling that won the race
   }
   throw new CliError(`The pdfpin daemon did not start. See ${path.join(home, 'server.log')}`);
 }
@@ -70,6 +70,7 @@ export async function stopDaemon(home = defaultHome()) {
     await sleep(100);
     if (!(await healthy(info.port, 300))) break;
   }
+  if (await healthy(info.port, 300)) return false;
   try { fs.unlinkSync(serverInfoPath(home)); } catch { /* already removed by the daemon */ }
   return true;
 }

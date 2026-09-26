@@ -6,6 +6,15 @@ import { search, rankByOverlap } from '../shared/matcher.js';
 import { docIdFor } from './store.js';
 
 export const COLORS = ['yellow', 'green', 'blue', 'pink', 'purple', 'orange'];
+export const MAX_QUERY = 2000; // characters; keeps the fuzzy DP bounded
+const MAX_OPEN_PDFS = 8;       // pdf.js documents kept in memory (LRU)
+
+function cleanRects(rects, { allowEmpty = false } = {}) {
+  if (!Array.isArray(rects) || (!rects.length && !allowEmpty) || rects.length > 500) throw new ApiError(400, 'Invalid rects');
+  const out = rects.map((r) => ({ x: +r?.x, y: +r?.y, w: +r?.w, h: +r?.h }));
+  if (!out.every((r) => [r.x, r.y, r.w, r.h].every(Number.isFinite))) throw new ApiError(400, 'Invalid rects');
+  return out;
+}
 
 export class ApiError extends Error {
   constructor(status, message, extra = {}) {
@@ -35,8 +44,19 @@ export class DocManager {
     const prev = this.pdfs.get(docIdFor(abs));
     if (prev) await closePdf(prev.pdf);
     const doc = this.store.openDocument({ path: abs, title: pdf.title || path.basename(abs, '.pdf'), pages: pdf.numPages });
-    this.pdfs.set(doc.id, { pdf, mtimeMs: st.mtimeMs });
+    this._remember(doc.id, { pdf, mtimeMs: st.mtimeMs });
     return doc;
+  }
+
+  /** LRU bookkeeping for open pdf.js documents. */
+  _remember(id, entry) {
+    this.pdfs.delete(id);
+    this.pdfs.set(id, entry);
+    while (this.pdfs.size > MAX_OPEN_PDFS) {
+      const [oldId, old] = this.pdfs.entries().next().value;
+      this.pdfs.delete(oldId);
+      closePdf(old.pdf);
+    }
   }
 
   resolve(ref) {
@@ -51,10 +71,10 @@ export class DocManager {
     let st;
     try { st = fs.statSync(doc.path); } catch { throw new ApiError(404, `File no longer exists: ${doc.path}`); }
     const cached = this.pdfs.get(doc.id);
-    if (cached && cached.mtimeMs === st.mtimeMs) return cached.pdf;
+    if (cached && cached.mtimeMs === st.mtimeMs) { this._remember(doc.id, cached); return cached.pdf; }
     if (cached) await closePdf(cached.pdf);
     const pdf = await openPdf(doc.path);
-    this.pdfs.set(doc.id, { pdf, mtimeMs: st.mtimeMs });
+    this._remember(doc.id, { pdf, mtimeMs: st.mtimeMs });
     if (cached) this.hub.broadcast(doc.id, 'doc.reloaded', { id: doc.id, pages: pdf.numPages });
     return pdf;
   }
@@ -70,6 +90,7 @@ export class DocManager {
   /** Locate a quote. Exact hits on any page first; fuzzy only on the most similar pages. */
   async find(doc, query, { page = null, fuzzy = true, limit = 50 } = {}) {
     if (!query || !collapse(query)) throw new ApiError(400, 'Query text is empty');
+    if (query.length > MAX_QUERY) throw new ApiError(400, `Query is too long (${query.length} chars, max ${MAX_QUERY})`);
     const pdf = await this.pdf(doc);
     if (page !== null && (page < 1 || page > pdf.numPages)) throw new ApiError(400, `Page ${page} is out of range (1-${pdf.numPages})`);
     const pages = page ? [page] : parsePages(null, pdf.numPages);
@@ -138,6 +159,7 @@ export class DocManager {
     if (spec.anchor) return { annotation: await this._addFromAnchor(doc, spec, page) };
     if (spec.rects && !spec.text) return { annotation: await this._addRect(doc, spec, page) };
     if (typeof spec.text !== 'string' || !collapse(spec.text)) throw new ApiError(400, '"text" (the quote to highlight) is required');
+    if (spec.text.length > MAX_QUERY) throw new ApiError(400, `"text" is too long (${spec.text.length} chars, max ${MAX_QUERY}); quote a sentence or a phrase`);
 
     const hits = await this.find(doc, spec.text, { page });
     if (!hits.length) {
@@ -174,9 +196,10 @@ export class DocManager {
       && a.startItem >= 0 && a.endItem < idx.items.length && a.startItem <= a.endItem;
     if (!ok) throw new ApiError(400, 'Invalid anchor');
     const { start, end } = anchorToOffsets(idx, a);
+    const rects = spec.rects?.length ? cleanRects(spec.rects) : null;
     const ann = this.store.addAnnotation(doc.id, {
       page, quote: spec.quote ?? collapse(idx.text.slice(start, end)), note: spec.note ?? '', title: spec.title ?? '', color: spec.color ?? 'yellow', tag: spec.tag ?? '',
-      anchor: a, rects: spec.rects?.length ? spec.rects : approxRects(idx, a), rectsSource: spec.rects?.length ? 'dom' : 'approx', score: 1, source: spec.source ?? 'user',
+      anchor: a, rects: rects ?? approxRects(idx, a), rectsSource: rects ? 'dom' : 'approx', score: 1, source: spec.source ?? 'user',
     });
     this.hub.broadcast(doc.id, 'annotation.added', { annotation: ann });
     return ann;
@@ -186,8 +209,7 @@ export class DocManager {
     if (!page) throw new ApiError(400, '"page" is required with "rects"');
     const pdf = await this.pdf(doc);
     if (page < 1 || page > pdf.numPages) throw new ApiError(400, `Page ${page} is out of range`);
-    const rects = spec.rects.map((r) => ({ x: +r.x, y: +r.y, w: +r.w, h: +r.h }));
-    if (!rects.every((r) => [r.x, r.y, r.w, r.h].every(Number.isFinite))) throw new ApiError(400, 'Invalid rects');
+    const rects = cleanRects(spec.rects);
     const ann = this.store.addAnnotation(doc.id, {
       page, quote: spec.quote ?? '', note: spec.note ?? '', title: spec.title ?? '', color: spec.color ?? 'yellow', tag: spec.tag ?? '',
       anchor: null, rects, rectsSource: 'dom', score: 1, source: spec.source ?? 'agent',
@@ -201,8 +223,8 @@ export class DocManager {
     const clean = {};
     for (const k of ['note', 'title', 'color', 'tag', 'quote']) if (patch[k] !== undefined) clean[k] = patch[k];
     if (Array.isArray(patch.rects)) {
-      clean.rects = patch.rects.map((r) => ({ x: +r.x, y: +r.y, w: +r.w, h: +r.h }));
-      clean.rectsSource = 'dom';
+      clean.rects = cleanRects(patch.rects, { allowEmpty: true });
+      clean.rectsSource = clean.rects.length ? 'dom' : 'none';
     }
     const ann = this.store.updateAnnotation(doc.id, annId, clean);
     if (!ann) throw new ApiError(404, `Annotation ${annId} not found`);

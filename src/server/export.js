@@ -1,7 +1,7 @@
 // Export: real /Highlight annotations into a copy of the PDF (pdf-lib), or a Markdown report.
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { PDFDocument, PDFName, PDFArray, PDFHexString } from 'pdf-lib';
+import { PDFDocument, PDFName, PDFArray, PDFHexString, PDFString } from 'pdf-lib';
 import { ApiError } from './docs.js';
 import { getPageIndex, toPdfRect } from './pdftext.js';
 
@@ -12,10 +12,10 @@ const rgb = (name) => {
   return [1, 3, 5].map((i) => +(parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(4));
 };
 
-/** ISO date → PDF date string (D:YYYYMMDDHHmmSSZ); undefined when unparsable. */
+/** ISO date → PDF date string (D:YYYYMMDDHHmmSSZ); undefined when unparsable. Plain strings become names in ctx.obj, hence PDFString. */
 const pdfDate = (iso) => {
   const t = Date.parse(iso);
-  return Number.isNaN(t) ? undefined : `D:${new Date(t).toISOString().replace(/[-:T]/g, '').slice(0, 14)}Z`;
+  return Number.isNaN(t) ? undefined : PDFString.of(`D:${new Date(t).toISOString().replace(/[-:T]/g, '').slice(0, 14)}Z`);
 };
 
 const defaultOut = (doc, suffix) => path.join(path.dirname(doc.path), path.basename(doc.path, path.extname(doc.path)) + suffix);
@@ -75,7 +75,10 @@ async function exportMarkdown(_docManager, doc, target) {
     if (doc.summary.body) lines.push(doc.summary.body, '');
   }
   const byPage = new Map();
-  for (const a of doc.annotations) (byPage.get(a.page) || byPage.set(a.page, []).get(a.page)).push(a);
+  for (const a of doc.annotations) {
+    if (!byPage.has(a.page)) byPage.set(a.page, []);
+    byPage.get(a.page).push(a);
+  }
   for (const page of [...byPage.keys()].sort((x, y) => x - y)) {
     lines.push(`## Page ${page}`, '');
     for (const a of byPage.get(page)) {
