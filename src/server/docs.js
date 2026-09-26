@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { openPdf, closePdf, getPageIndex, offsetsToAnchor, anchorToOffsets, approxRects, parsePages } from './pdftext.js';
-import { search, rankByOverlap } from './matcher.js';
+import { search, rankByOverlap } from '../shared/matcher.js';
 import { docIdFor } from './store.js';
 
 export const COLORS = ['yellow', 'green', 'blue', 'pink', 'purple', 'orange'];

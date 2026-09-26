@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalize, search } from '../src/server/matcher.js';
+import { normalize, search } from '../src/shared/matcher.js';
 
 test('normalize collapses whitespace, lowercases and maps back to raw offsets', () => {
   const { text, map } = normalize('Hello   World\n\tFoo');
@@ -76,7 +76,7 @@ test('search can be restricted to exact matches', () => {
 });
 
 test('rankByOverlap orders candidates by shared trigrams with the query', async () => {
-  const { rankByOverlap } = await import('../src/server/matcher.js');
+  const { rankByOverlap } = await import('../src/shared/matcher.js');
   const pages = [
     { page: 1, text: 'kernel scheduling and memory management' },
     { page: 2, text: 'grey-box concolic testing on binary code' },

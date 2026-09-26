@@ -11,6 +11,7 @@ import { DocManager, ApiError } from './docs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.join(__dirname, '..', 'web');
+const SHARED_ROOT = path.join(__dirname, '..', 'shared');
 const require = createRequire(import.meta.url);
 const PDFJS_ROOT = path.join(path.dirname(require.resolve('pdfjs-dist/package.json')), 'build');
 export const VERSION = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8')).version;
@@ -144,6 +145,7 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
       if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'Method not allowed' });
       if (p === '/' || p.startsWith('/view/')) return serveFile(res, WEB_ROOT, 'index.html');
       if (p.startsWith('/assets/')) return serveFile(res, WEB_ROOT, p.slice('/assets/'.length));
+      if (p.startsWith('/shared/')) return serveFile(res, SHARED_ROOT, p.slice('/shared/'.length));
       if (p.startsWith('/vendor/pdfjs/')) return serveFile(res, PDFJS_ROOT, p.slice('/vendor/pdfjs/'.length));
       return send(res, 404, { error: 'Not found' });
     } catch (e) {
