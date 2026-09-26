@@ -208,6 +208,7 @@ input { font: inherit; color: inherit; }
 .textLayer .markedContent { display: contents; }
 .textLayer span[role="img"] { user-select: none; cursor: default; }
 .textLayer ::selection { background: rgba(14, 116, 144, 0.30); }
+.textLayer br::selection { background: transparent; }
 
 /* highlight layer */
 .hl-layer { position: absolute; left: 0; top: 0; transform-origin: 0 0; transform: scale(var(--scale-factor)); z-index: 3; pointer-events: none; }
