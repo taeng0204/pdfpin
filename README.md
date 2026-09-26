@@ -58,7 +58,7 @@ curly quotes, end-of-line hyphenation), falling back to an approximate match wit
 edit distance. The viewer turns anchors into exact glyph rectangles through the text layer.
 
 Environment: `PDFPIN_HOME` (data dir), `PDFPIN_PORT` (daemon port, default 47831),
-`PDFPIN_BROWSER=browser` (use the default browser instead of an app-mode window),
+`PDFPIN_BROWSER=browser` or `pdfpin open --in-browser` (default browser instead of an app-mode window),
 `PDFPIN_CHROME=/path/to/chrome`.
 
 ## Develop

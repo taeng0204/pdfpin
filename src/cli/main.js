@@ -64,7 +64,7 @@ program
   .description('open a PDF in the viewer (starts the daemon if needed) and make it the current document')
   .argument('<file>', 'path to a PDF file')
   .option('--no-browser', 'do not launch a viewer window')
-  .option('--browser', 'use the default browser instead of an app-mode window')
+  .option('--in-browser', 'use the default browser instead of an app-mode window')
   .option('--json', 'machine-readable output')
   .action(async (file, opts) => {
     const abs = path.resolve(file);
@@ -74,7 +74,7 @@ program
     const url = `${c.base}${doc.viewerUrl}`;
     let launched = 'not launched';
     if (opts.browser !== false) {
-      launched = doc.viewers > 0 ? 'already open' : openViewer(url, { mode: opts.browser === true ? 'browser' : undefined, home });
+      launched = doc.viewers > 0 ? 'already open' : openViewer(url, { mode: opts.inBrowser ? 'browser' : undefined, home });
     }
     if (opts.json) return json({ ...doc, url, launched });
     out(`Opened "${doc.title}" (${doc.pages} pages, ${doc.annotations.length} annotations) · id ${doc.id}`);

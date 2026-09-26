@@ -109,7 +109,7 @@ Batch `POST` returns per-item results; items that fail to match do not abort the
 ### 3.7 CLI
 `-d, --doc <id|path>` on every command selects a document; default is the current one.
 ```
-pdfpin open <file.pdf> [--no-browser] [--browser]   start daemon if needed, open viewer, print doc id
+pdfpin open <file.pdf> [--no-browser] [--in-browser]   start daemon if needed, open viewer, print doc id
 pdfpin text [-p 1-3,7] [--json]                     page text with "=== Page N ===" markers
 pdfpin find <query> [-p N] [--json]                  matches with page and context
 pdfpin add --text "…" --note "…" [-p N] [--color c] [--tag t] [--title "…"] [--all]

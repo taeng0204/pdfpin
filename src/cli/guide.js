@@ -20,7 +20,7 @@ RULES OF THUMB
   • --color: yellow (default), green, blue, pink, purple, orange. A consistent colour per tag helps readers.
 
 COMMANDS
-  open <file.pdf> [--no-browser] [--browser]     open a PDF (auto-starts the daemon)
+  open <file.pdf> [--no-browser] [--in-browser]  open a PDF (auto-starts the daemon; app window or default browser)
   text [-p 1-3,7] [--json]                       page text with "=== Page N ===" markers
   find <query> [-p N] [--json]                   locate a phrase: page, score, context
   add --text "…" --note "…" [-p N] [--color c] [--tag t] [--title "…"] [--all]
