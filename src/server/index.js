@@ -129,6 +129,10 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   const server = http.createServer(async (req, res) => {
     let p = '';
     try {
+      // Loopback only, and only when the browser believes it is talking to loopback: a DNS-rebinding
+      // page would arrive with its own Host header and must not read documents or drive the viewer.
+      const hostName = String(req.headers.host || '').replace(/:\d+$/, '').replace(/^\[(.*)\]$/, '$1');
+      if (!['127.0.0.1', 'localhost', '::1'].includes(hostName)) throw new ApiError(403, 'Forbidden host');
       const url = new URL(req.url, 'http://localhost');
       p = decodeURIComponent(url.pathname);
       if (p.startsWith('/api/')) {

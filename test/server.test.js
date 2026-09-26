@@ -197,3 +197,14 @@ test('over-long quotes are rejected before any matching work', async () => {
   assert.equal(r.status, 400);
   assert.match(r.json.error, /too long/i);
 });
+
+test('requests with a foreign Host header are refused (DNS-rebinding guard)', async () => {
+  // fetch() silently drops a custom Host header, so use the raw http client
+  const http = await import('node:http');
+  const status = await new Promise((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port: handle.port, path: `/api/docs/${docId}/text?pages=1`, headers: { host: 'evil.example:1234' } }, (res) => { res.resume(); resolve(res.statusCode); });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(status, 403);
+});
