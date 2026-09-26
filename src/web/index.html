@@ -12,6 +12,7 @@
 <div id="app" class="app">
   <header class="topbar" id="topbar">
     <div class="tb-left">
+      <button class="icon-btn" id="history-toggle" title="History (l)" aria-pressed="false"></button>
       <a class="brand" href="/" title="pdfpin home">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 3.5 20.5 9.5 17 13l.5 4.5-3 1-3-3.5L5 21l-1-1 6-6.5-3.5-3 1-3L12 8z" fill="currentColor"/></svg>
         <span>pdfpin</span>
@@ -79,6 +80,18 @@
     </aside>
   </main>
 
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <aside class="drawer" id="drawer" aria-label="Document history" hidden>
+    <div class="drawer-head">
+      <span class="panel-heading">History</span>
+      <span class="count-badge" id="history-count">0</span>
+      <span class="spacer"></span>
+      <button class="icon-btn" id="drawer-close" title="Close (Esc)"></button>
+    </div>
+    <div class="drawer-search"><input id="history-filter" type="search" placeholder="Filter documents…" autocomplete="off" spellcheck="false"></div>
+    <div class="drawer-list" id="history-list"></div>
+    <div class="drawer-foot">Open another PDF from a terminal: <code>pdfpin open file.pdf</code></div>
+  </aside>
   <div id="popover" class="popover" hidden></div>
   <div id="sel-toolbar" class="sel-toolbar" hidden></div>
   <div id="toasts" class="toasts" aria-live="polite"></div>

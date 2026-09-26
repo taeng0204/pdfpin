@@ -8,6 +8,7 @@ import { initSearch } from './search.js';
 import { initSelection } from './selection.js';
 import { initStrip } from './strip.js';
 import { initKeys } from './keys.js';
+import { initHistory } from './history.js';
 import { connectEvents } from './sse.js';
 import { toast } from './toast.js';
 import { icons } from './icons.js';
@@ -35,8 +36,13 @@ async function boot() {
     const r = m ? await api('GET', `/api/docs/${m[1]}`) : await api('GET', '/api/docs/current');
     doc = r.doc;
   } catch (e) {
-    $('loading-text').textContent = e.status === 404 ? 'No document is open. Run `pdfpin open <file.pdf>` in a terminal.' : `Cannot load document: ${e.message}`;
+    $('loading-text').textContent = e.status === 404 ? 'No document is open. Pick one from the history, or run `pdfpin open <file.pdf>` in a terminal.' : `Cannot load document: ${e.message}`;
     $('doc-title').textContent = 'pdfpin';
+    applyTheme();
+    applyPanel();
+    $('panel-toggle').innerHTML = icons.panel;
+    const history = initHistory();
+    if (e.status === 404) history.open();
     return;
   }
   if (!m) history.replaceState(null, '', `/view/${doc.id}`);
@@ -64,7 +70,9 @@ async function boot() {
   initSelection({ viewer, docApi });
   initStrip({ viewer });
 
+  const history = initHistory();
   const ui = {
+    toggleHistory() { history.isOpen() ? history.close() : history.open(); },
     togglePanel() { state.panelOpen = !state.panelOpen; savePref('panel', state.panelOpen); applyPanel(); },
     toggleTheme() { state.theme = state.theme === 'dark' ? 'light' : 'dark'; savePref('theme', state.theme); applyTheme(); },
     toggleHighlights() { app.classList.toggle('hide-highlights'); },
@@ -140,6 +148,7 @@ async function boot() {
       if (!document.hasFocus()) window.focus?.();
     },
     'doc.reloaded': () => { toast('The PDF changed on disk — reloading', { duration: 1500 }); setTimeout(() => location.reload(), 600); },
+    'doc.removed': () => { toast('This document was removed from pdfpin', { duration: 2500 }); setTimeout(() => { location.href = '/'; }, 800); },
     resync,
   }, (s) => { const c = $('conn'); c.dataset.state = s; c.title = { open: 'Live: connected', connecting: 'Connecting…', error: 'Disconnected' }[s]; });
 

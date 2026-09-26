@@ -15,6 +15,7 @@ export function initKeys({ viewer, search, ui }) {
       case 'n': case 'j': step(1); break;
       case 'p': case 'k': step(-1); break;
       case 't': ui.togglePanel(); break;
+      case 'l': ui.toggleHistory(); break;
       case 'd': ui.toggleTheme(); break;
       case 'h': ui.toggleHighlights(); break;
       case '[': viewer.scrollToPage(Math.max(1, state.currentPage - 1)); break;

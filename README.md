@@ -43,6 +43,8 @@ pdfpin status · pdfpin stop
 - Search in the document (`⌘/Ctrl+F`), zoom (`⌘/Ctrl +/−/0`, ctrl+wheel), fit width / fit page.
 - Select text on a page → floating toolbar → highlight in a colour, optionally with a note.
 - Light / dark theme (`d`), dimmed pages in dark mode, panel toggle (`t`), hide highlights (`h`).
+- History drawer (`l` or the clock button): every PDF opened so far with its note count, tags and
+  summary; click one to open it instantly (it also becomes the CLI's current document).
 
 ## How it works
 

@@ -16,6 +16,12 @@ export async function api(method, url, body) {
   return json;
 }
 
+export const historyApi = {
+  list: () => api('GET', '/api/docs'),
+  activate: (id) => api('POST', `/api/docs/${id}/activate`),
+  remove: (id) => api('DELETE', `/api/docs/${id}`),
+};
+
 export const docApi = (id) => ({
   get: () => api('GET', `/api/docs/${id}`),
   add: (spec) => api('POST', `/api/docs/${id}/annotations`, spec),
