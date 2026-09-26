@@ -1,0 +1,28 @@
+{
+  "name": "pdfpin",
+  "version": "0.1.0",
+  "description": "Agent-friendly PDF viewer: a local viewer plus a CLI that lets AI agents pin highlights and explanations onto a PDF.",
+  "type": "module",
+  "bin": {
+    "pdfpin": "bin/pdfpin.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "skill",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "start": "node src/server/index.js",
+    "test": "node --test test/"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^15.0.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.3.289"
+  }
+}
