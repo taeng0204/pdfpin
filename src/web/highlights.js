@@ -79,7 +79,8 @@ export function initHighlights(viewer, docApi) {
 
   function showPopover(a, anchorRect, { pinned = false } = {}) {
     popover.className = `popover hl-color-${a.color}`;
-    const meta = [`p.${a.page}`, a.tag ? `#${a.tag}` : '', a.source === 'user' ? 'you' : 'agent'].filter(Boolean).join(' · ');
+    const sess = a.sessionId ? state.sessions.find((s) => s.id === a.sessionId) : null;
+    const meta = [`p.${a.page}`, a.tag || '', a.source === 'user' ? 'by hand' : '', sess?.title ? sess.title.slice(0, 40) : ''].filter(Boolean).join(' · ');
     const acts = pinned && actions ? `<div class="pop-actions"><button class="tb-btn pop-edit">${icons.edit}<span>Edit</span></button><button class="tb-btn danger pop-del">${icons.trash}<span>Delete</span></button></div>` : '';
     popover.innerHTML = `<div class="pop-meta"></div>${a.title ? '<div class="pop-title"></div>' : ''}<div class="md"></div>${a.quote ? '<div class="pop-quote"></div>' : ''}${acts}`;
     popover.querySelector('.pop-edit')?.addEventListener('click', () => { hidePopover(); actions.edit(a.id); });

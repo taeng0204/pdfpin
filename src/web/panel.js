@@ -28,7 +28,7 @@ export function initPanel({ docApi, viewer, highlights }) {
       for (const t of tags) {
         const b = document.createElement('button');
         b.className = 'chip';
-        b.textContent = `#${t}`;
+        b.textContent = t;
         b.setAttribute('aria-pressed', state.filter.tags.has(t));
         b.onclick = () => { toggle(state.filter.tags, t); renderAll(); emit('filter'); };
         chipsEl.appendChild(b);
@@ -105,6 +105,7 @@ export function initPanel({ docApi, viewer, highlights }) {
           <button class="icon-btn act-focus" title="Show only this session on the pages" aria-pressed="${state.filter.session === s.id}">${icons.eye}</button>
           <button class="icon-btn act-sedit" title="Edit title and overview">${icons.edit}</button>
           <button class="icon-btn act-sdel" title="Delete session…">${icons.trash}</button>
+          <span class="icon-btn fold" aria-hidden="true">${icons.chevron}</span>
         </span>
       </div>
       <div class="session-body">
@@ -143,7 +144,7 @@ export function initPanel({ docApi, viewer, highlights }) {
     el.tabIndex = 0;
     el.innerHTML = `
       <div class="card-meta">
-        ${n ? `<span class="idx">${n}</span>` : ''}<span class="pg">p.${a.page}</span>${a.source === 'user' ? '<span class="src">you</span>' : ''}${a.score < 0.999 ? `<span class="src" title="fuzzy match">~${Math.round(a.score * 100)}%</span>` : ''}
+        ${n ? `<span class="idx">${n}</span>` : ''}<span class="pg">p.${a.page}</span>${a.tag ? '<span class="tag"></span>' : ''}${a.source === 'user' ? '<span class="src">by hand</span>' : ''}${a.score < 0.999 ? `<span class="src" title="fuzzy match">~${Math.round(a.score * 100)}%</span>` : ''}
         <span class="spacer"></span>
         <span class="card-actions">
           <button class="icon-btn act-copy" title="Copy as citation">${icons.copy}</button>
@@ -154,7 +155,8 @@ export function initPanel({ docApi, viewer, highlights }) {
       ${a.quote ? '<p class="card-quote"></p>' : ''}
       ${a.title ? '<div class="card-title"></div>' : ''}
       <div class="card-note md"></div>`;
-    if (a.quote) el.querySelector('.card-quote').textContent = a.quote;
+    if (a.tag) el.querySelector('.tag').textContent = a.tag;
+    if (a.quote) { const m = document.createElement('mark'); m.className = `mk mk-${a.color}`; m.textContent = a.quote; el.querySelector('.card-quote').appendChild(m); }
     if (a.title) el.querySelector('.card-title').textContent = a.title;
     el.querySelector('.card-note').innerHTML = renderMarkdown(a.note);
     if (a._fresh) a._fresh = false;

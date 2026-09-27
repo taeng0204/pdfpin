@@ -5,8 +5,9 @@ function inline(s) {
   let t = esc(s);
   t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
   t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  t = t.replace(/(^|[^\p{L}\p{N}*])\*([^*\n]+)\*(?=[^\p{L}\p{N}*]|$)/gu, '$1<em>$2</em>');
-  t = t.replace(/(^|[^\p{L}\p{N}_])_([^_\n]+)_(?=[^\p{L}\p{N}_]|$)/gu, '$1<em>$2</em>');
+  // emphasis may be followed directly by letters (Korean particles: *강조*을), but never opens inside a word
+  t = t.replace(/(^|[^\p{L}\p{N}*])\*(\S(?:[^*\n]*?\S)?)\*/gu, '$1<em>$2</em>');
+  t = t.replace(/(^|[^\p{L}\p{N}_])_(\S(?:[^_\n]*?\S)?)_(?=[^\p{L}\p{N}_]|$)/gu, '$1<em>$2</em>');
   t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
   return t;
 }

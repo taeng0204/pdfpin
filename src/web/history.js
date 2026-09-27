@@ -79,7 +79,7 @@ export function initHistory() {
       </div>`;
     el.querySelector('.hist-title').textContent = d.title;
     el.querySelector('.hist-path').textContent = shortPath(d.path);
-    el.querySelectorAll('.hist-meta .tag').forEach((t, k) => { t.textContent = `#${d.tags[k]}`; });
+    el.querySelectorAll('.hist-meta .tag').forEach((t, k) => { t.textContent = d.tags[k]; });
     if (d.latestSession) el.querySelector('.hist-summary').textContent = `${d.sessionCount > 1 ? `${d.sessionCount} sessions · latest: ` : ''}${d.latestSession}`;
     return el;
   }
