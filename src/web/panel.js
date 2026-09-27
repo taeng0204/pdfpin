@@ -54,7 +54,8 @@ export function initPanel({ docApi, viewer, highlights }) {
     const all = state.annotations.size;
     const visible = visibleAnnotations();
     const visibleIds = new Set(visible.map((a) => a.id));
-    countEl.textContent = visible.length === all ? all : `${visible.length}/${all}`;
+    const ns = state.sessions.length;
+    countEl.textContent = `${ns} session${ns === 1 ? '' : 's'} · ${visible.length === all ? all : `${visible.length}/${all}`}`;
     cardsEl.innerHTML = '';
     if (!all && !state.sessions.length) {
       cardsEl.innerHTML = `<div class="empty"><div class="glyph">${icons.pin}</div><strong>Nothing marked yet.</strong><br>Ask your agent a question, or select text on a page.<code>pdfpin mark --json '{"title": "…",\n  "flow": "…", "highlights": [{"text": "…", "note": "…"}]}'</code></div>`;

@@ -123,8 +123,11 @@ async function boot() {
     const label = `${list.length === 1 ? 'New highlight' : `${list.length} new highlights`} · ${where}${s?.title ? ` · ${s.title.slice(0, 40)}` : ''}`;
     toast(label, { color: list[0].color, action: 'Show', onAction: () => select(list[0].id, { from: 'toast' }) });
   };
+  const daemonPid = (await api('GET', '/api/health').catch(() => ({}))).pid;
   const resync = async () => {
     try {
+      const h = await api('GET', '/api/health').catch(() => null);
+      if (h && daemonPid && h.pid !== daemonPid) { location.reload(); return; } // daemon restarted: pick up new code
       const r = await docApi.get();
       state.doc = r.doc;
       setSessions(r.doc.sessions || [], r.doc.currentSessionId);
