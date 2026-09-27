@@ -12,7 +12,7 @@ export function initHistory() {
   const count = document.getElementById('history-count');
   const filter = document.getElementById('history-filter');
   const toggle = document.getElementById('history-toggle');
-  toggle.innerHTML = icons.history;
+  toggle.innerHTML = icons.library;
   document.getElementById('drawer-close').innerHTML = icons.close;
   let docs = [];
   let query = '';
@@ -43,7 +43,7 @@ export function initHistory() {
 
   function render() {
     const q = query.trim().toLowerCase();
-    const rows = docs.filter((d) => !q || `${d.title} ${d.path} ${d.summaryTitle} ${d.tags.join(' ')}`.toLowerCase().includes(q));
+    const rows = docs.filter((d) => !q || `${d.title} ${d.path} ${d.latestSession} ${d.tags.join(' ')}`.toLowerCase().includes(q));
     count.textContent = docs.length;
     list.innerHTML = '';
     if (!docs.length) { list.innerHTML = '<div class="hist-empty">No documents yet.<br>Open one with <code>pdfpin open file.pdf</code>.</div>'; return; }
@@ -71,7 +71,7 @@ export function initHistory() {
         <div class="hist-title"></div>
         <div class="hist-path"></div>
         <div class="hist-meta"><span>${d.pages} pages</span>${notes}<span>${relative(d.openedAt)}</span>${tags}</div>
-        ${d.summaryTitle ? '<div class="hist-summary"></div>' : ''}
+        ${d.latestSession ? '<div class="hist-summary"></div>' : ''}
       </div>
       <div class="hist-actions">
         <button class="icon-btn act-reveal" title="Show in folder">${icons.folder}</button>
@@ -80,7 +80,7 @@ export function initHistory() {
     el.querySelector('.hist-title').textContent = d.title;
     el.querySelector('.hist-path').textContent = shortPath(d.path);
     el.querySelectorAll('.hist-meta .tag').forEach((t, k) => { t.textContent = `#${d.tags[k]}`; });
-    if (d.summaryTitle) el.querySelector('.hist-summary').textContent = d.summaryTitle;
+    if (d.latestSession) el.querySelector('.hist-summary').textContent = `${d.sessionCount > 1 ? `${d.sessionCount} sessions · latest: ` : ''}${d.latestSession}`;
     return el;
   }
 

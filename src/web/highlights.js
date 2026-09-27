@@ -1,6 +1,6 @@
 // Highlight overlay: anchors → exact DOM rects via Range, rendering, hover popover, selection pulse.
 import { mergeLineRects } from '/shared/pagetext.js';
-import { state, on, select, emit, visibleAnnotations } from './state.js';
+import { state, on, select, emit, visibleAnnotations, hasFilter } from './state.js';
 import { renderMarkdown } from './markdown.js';
 import { icons } from './icons.js';
 
@@ -132,12 +132,11 @@ export function initHighlights(viewer, docApi) {
 
   // page highlights follow the panel filter: everything else fades back
   function applyFilter() {
-    const { text, tags, colors } = state.filter;
-    const active = text.trim() || tags.size || colors.size;
-    const keep = active ? new Set(visibleAnnotations().map((a) => a.id)) : null;
+    const keep = hasFilter() ? new Set(visibleAnnotations().map((a) => a.id)) : null;
     for (const [gid, g] of groups) g.el.classList.toggle('faded', !!keep && !keep.has(gid));
   }
   on('filter', applyFilter);
+  on('sessions', applyFilter);
   on('annotations', () => setTimeout(applyFilter, 0));
   on('select', ({ id }) => {
     for (const [gid, g] of groups) g.el.classList.toggle('selected', gid === id);

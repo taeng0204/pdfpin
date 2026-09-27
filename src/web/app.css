@@ -518,3 +518,42 @@ input { font: inherit; color: inherit; }
 .popover .pop-actions .tb-btn.danger:hover { color: var(--danger); }
 .popover .pop-actions .tb-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .hist:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* ---------- sessions (the document's history) ---------- */
+.session { margin: 4px 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); overflow: hidden; animation: card-in 300ms cubic-bezier(.2,.7,.2,1) both; }
+.session.current { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.session.focused { box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
+.session-head { display: flex; align-items: flex-start; gap: 8px; padding: 10px 8px 10px 10px; cursor: pointer; user-select: none; }
+.session-head.static { cursor: default; padding-left: 14px; }
+.session-head:hover .session-title { color: var(--accent-ink); }
+.session-head:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-soft); }
+.session .chev { display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; color: var(--muted); transition: transform 160ms; }
+.session .chev svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.session:not(.collapsed) .chev { transform: rotate(90deg); }
+.session-main { flex: 1; min-width: 0; }
+.session-title { font: 600 14.5px/1.3 var(--font-serif); color: var(--ink); letter-spacing: -0.003em; }
+.session-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 3px; font-size: 11.5px; color: var(--muted); }
+.session-meta .cur { color: var(--accent-ink); background: var(--accent-soft); padding: 0 6px; border-radius: 999px; font-weight: 600; font-size: 10.5px; margin-left: 2px; }
+.mini-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--hl-color, var(--hl-yellow)); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12); }
+.session-meta .dots { display: inline-flex; gap: 3px; margin-right: 3px; }
+.session-actions { display: flex; gap: 0; opacity: 0; transition: opacity 120ms; }
+.session-head:hover .session-actions, .session-head:focus-within .session-actions, .session.focused .session-actions { opacity: 1; }
+.session-actions .icon-btn { width: 26px; height: 26px; border-radius: 7px; }
+.session-actions .icon-btn svg { width: 14px; height: 14px; }
+.session-actions .icon-btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); opacity: 1; }
+.session-body { padding: 0 8px 8px 10px; }
+.session.collapsed .session-body { display: none; }
+.session-flow { margin: 0 2px 10px 2px; padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; background: var(--surface); font-size: 13px; color: var(--ink-2); }
+.session-flow p:last-child { margin-bottom: 0; }
+.session-editor { margin: 0 2px 10px; padding: 10px; border: 1px solid var(--accent); border-radius: 10px; background: var(--surface); }
+.session-edit-title { width: 100%; height: 32px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); padding: 0 10px; font: 600 14px var(--font-serif); color: var(--ink); margin-bottom: 6px; }
+.session-edit-title:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.session-editor .card-edit { margin-top: 0; min-height: 84px; }
+.group { margin-top: 4px; }
+.group-head { display: flex; align-items: center; gap: 7px; padding: 6px 4px 6px; font: 600 11px var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.group-head .group-name { text-transform: none; letter-spacing: 0; font: 600 12px var(--font-ui); color: var(--ink-2); }
+.group-head .rule { flex: 1; height: 1px; background: var(--line); }
+.session .card { margin: 0 0 6px; }
+.session.loose { background: transparent; border-style: dashed; }
+.card-meta .idx { font: 600 10.5px var(--font-mono); color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--line); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 6px; display: inline-grid; place-items: center; }
+.session .card-meta .idx { background: var(--surface); }

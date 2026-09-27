@@ -29,4 +29,7 @@ export const docApi = (id) => ({
   update: (aid, patch) => api('PATCH', `/api/docs/${id}/annotations/${aid}`, patch),
   remove: (aid) => api('DELETE', `/api/docs/${id}/annotations/${aid}`),
   export: (format, out) => api('POST', `/api/docs/${id}/export`, { format, out }),
+  addSession: (spec) => api('POST', `/api/docs/${id}/sessions`, spec),
+  updateSession: (sid, patch) => api('PATCH', `/api/docs/${id}/sessions/${sid}`, patch),
+  removeSession: (sid) => api('DELETE', `/api/docs/${id}/sessions/${sid}`),
 });

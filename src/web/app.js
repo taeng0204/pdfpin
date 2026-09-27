@@ -1,6 +1,7 @@
 // pdfpin viewer bootstrap.
 import { api, docApi as makeDocApi } from './api.js';
-import { state, on, emit, savePref, setAnnotations, upsertAnnotation, dropAnnotation, select } from './state.js';
+import { state, on, emit, savePref, setAnnotations, upsertAnnotation, dropAnnotation, select, setSessions, upsertSession, dropSession } from './state.js';
+import { confirmDialog } from './dialog.js';
 import { initViewer } from './viewer.js';
 import { initHighlights } from './highlights.js';
 import { initPanel } from './panel.js';
@@ -102,7 +103,9 @@ async function boot() {
   $('page-input').addEventListener('focus', (e) => e.target.select());
   $('page-input').addEventListener('blur', () => { $('page-input').value = state.currentPage; });
 
-  // annotations
+  // sessions + annotations (older sessions start folded; the latest stays open)
+  setSessions(doc.sessions || [], doc.currentSessionId);
+  for (const s of state.sessions.slice(0, -1)) state.collapsed.add(s.id);
   setAnnotations(doc.annotations);
   await highlights.renderAll();
   panel.renderAll();
@@ -116,16 +119,17 @@ async function boot() {
     if (!list.length) return;
     const pages = [...new Set(list.map((a) => a.page))].sort((a, b) => a - b);
     const where = pages.length > 4 ? `p.${pages[0]}–${pages[pages.length - 1]}` : pages.map((p) => `p.${p}`).join(', ');
-    const label = list.length === 1 ? `New highlight on ${where}` : `${list.length} new highlights · ${where}`;
+    const s = list[0].sessionId ? state.sessions.find((x) => x.id === list[0].sessionId) : null;
+    const label = `${list.length === 1 ? 'New highlight' : `${list.length} new highlights`} · ${where}${s?.title ? ` · ${s.title.slice(0, 40)}` : ''}`;
     toast(label, { color: list[0].color, action: 'Show', onAction: () => select(list[0].id, { from: 'toast' }) });
   };
   const resync = async () => {
     try {
       const r = await docApi.get();
       state.doc = r.doc;
+      setSessions(r.doc.sessions || [], r.doc.currentSessionId);
       setAnnotations(r.doc.annotations);
       await highlights.renderAll();
-      emit('summary');
     } catch (e) { console.error('resync', e); }
   };
   connectEvents(doc.id, {
@@ -142,8 +146,19 @@ async function boot() {
     },
     'annotation.removed': ({ id }) => dropAnnotation(id),
     'annotations.cleared': () => resync(),
-    'summary.updated': ({ summary }) => { state.doc.summary = summary; emit('summary'); },
-    focus: ({ annotationId, page }) => {
+    'session.added': ({ session }) => {
+      // a new interaction: fold the older ones so the latest reads like the top of a history
+      for (const s of state.sessions) state.collapsed.add(s.id);
+      state.collapsed.delete(session.id);
+      state.currentSessionId = session.id;
+      upsertSession(session);
+      toast(`New session: ${session.title || 'untitled'}`, { duration: 4000 });
+    },
+    'session.updated': ({ session }) => upsertSession(session),
+    'session.removed': ({ id, currentSessionId }) => { state.currentSessionId = currentSessionId ?? null; dropSession(id); },
+    'session.current': ({ currentSessionId }) => { state.currentSessionId = currentSessionId; emit('sessions'); },
+    focus: ({ annotationId, page, sessionId }) => {
+      if (sessionId) { state.collapsed.delete(sessionId); emit('sessions'); }
       if (annotationId) select(annotationId, { from: 'agent' });
       else if (page) viewer.scrollToPage(page);
       if (!document.hasFocus()) window.focus?.();
