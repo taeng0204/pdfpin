@@ -60,7 +60,11 @@ export class Store {
   get(id) {
     if (this.cache.has(id)) return this.cache.get(id);
     const doc = readJson(this._file(id), null);
-    if (doc) this.cache.set(id, doc);
+    if (doc) {
+      doc.sessions ??= [];
+      doc.currentSessionId ??= null;
+      this.cache.set(id, doc);
+    }
     return doc;
   }
 
@@ -78,7 +82,8 @@ export class Store {
         openedAt: doc.openedAt,
         updatedAt: doc.updatedAt,
         annotationCount: doc.annotations.length,
-        summaryTitle: doc.summary?.title || '',
+        sessionCount: doc.sessions.length,
+        latestSession: doc.sessions.length ? doc.sessions[doc.sessions.length - 1].title : '',
         tags: [...new Set(doc.annotations.map((a) => a.tag).filter(Boolean))],
         exists: fs.existsSync(doc.path),
         current: doc.id === this.state.currentDocId,
@@ -132,8 +137,10 @@ export class Store {
     const now = new Date().toISOString();
     let doc = this.get(id);
     if (!doc) {
-      doc = { id, path: filePath, title: title || path.basename(filePath), pages, createdAt: now, openedAt: now, summary: null, annotations: [] };
+      doc = { id, path: filePath, title: title || path.basename(filePath), pages, createdAt: now, openedAt: now, sessions: [], currentSessionId: null, annotations: [] };
     } else {
+      doc.sessions ??= [];
+      doc.currentSessionId ??= null;
       doc.openedAt = now;
       if (title) doc.title = title;
       if (pages) doc.pages = pages;
@@ -156,6 +163,7 @@ export class Store {
       color: fields.color ?? 'yellow',
       tag: fields.tag ?? '',
       source: fields.source ?? 'agent',
+      sessionId: fields.sessionId ?? null,
       anchor: fields.anchor ?? null,
       rects: fields.rects ?? [],
       rectsSource: fields.rectsSource ?? (fields.rects?.length ? 'dom' : 'none'),
@@ -173,7 +181,7 @@ export class Store {
     if (!doc) return null;
     const ann = doc.annotations.find((a) => a.id === annId);
     if (!ann) return null;
-    for (const k of ['note', 'title', 'color', 'tag', 'rects', 'rectsSource', 'quote']) {
+    for (const k of ['note', 'title', 'color', 'tag', 'rects', 'rectsSource', 'quote', 'sessionId']) {
       if (patch[k] !== undefined) ann[k] = patch[k];
     }
     ann.updatedAt = new Date().toISOString();
@@ -201,11 +209,56 @@ export class Store {
     return removed;
   }
 
-  setSummary(docId, summary) {
+  /** A session is one interaction with an agent (or a person): a title, an overview ("flow") and its highlights. */
+  addSession(docId, fields) {
     const doc = this.get(docId);
     if (!doc) return null;
-    doc.summary = summary ? { title: summary.title ?? '', body: summary.body ?? '' } : null;
+    const now = new Date().toISOString();
+    const session = {
+      id: shortId('s'),
+      title: fields.title ?? '',
+      flow: fields.flow ?? '',
+      source: fields.source ?? 'agent',
+      createdAt: now,
+      updatedAt: now,
+    };
+    doc.sessions.push(session);
+    doc.currentSessionId = session.id;
     this._save(doc);
-    return doc.summary;
+    return session;
+  }
+
+  getSession(docId, sessionId) {
+    return this.get(docId)?.sessions.find((s) => s.id === sessionId) ?? null;
+  }
+
+  updateSession(docId, sessionId, patch) {
+    const doc = this.get(docId);
+    const session = doc?.sessions.find((s) => s.id === sessionId);
+    if (!session) return null;
+    for (const k of ['title', 'flow']) if (patch[k] !== undefined) session[k] = patch[k];
+    session.updatedAt = new Date().toISOString();
+    this._save(doc);
+    return session;
+  }
+
+  /** Removes the session and its annotations. Returns the number of annotations removed, or -1 if unknown. */
+  removeSession(docId, sessionId) {
+    const doc = this.get(docId);
+    if (!doc || !doc.sessions.some((s) => s.id === sessionId)) return -1;
+    doc.sessions = doc.sessions.filter((s) => s.id !== sessionId);
+    const before = doc.annotations.length;
+    doc.annotations = doc.annotations.filter((a) => a.sessionId !== sessionId);
+    if (doc.currentSessionId === sessionId) doc.currentSessionId = doc.sessions.length ? doc.sessions[doc.sessions.length - 1].id : null;
+    this._save(doc);
+    return before - doc.annotations.length;
+  }
+
+  setCurrentSession(docId, sessionId) {
+    const doc = this.get(docId);
+    if (!doc) return null;
+    doc.currentSessionId = sessionId;
+    this._save(doc);
+    return sessionId;
   }
 }

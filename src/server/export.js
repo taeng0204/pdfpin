@@ -70,23 +70,20 @@ function annotsOf(page) {
 
 async function exportMarkdown(_docManager, doc, target) {
   const lines = [`# ${doc.title}`, '', `Source: \`${doc.path}\``, ''];
-  if (doc.summary && (doc.summary.title || doc.summary.body)) {
-    if (doc.summary.title) lines.push(`## ${doc.summary.title}`, '');
-    if (doc.summary.body) lines.push(doc.summary.body, '');
-  }
-  const byPage = new Map();
-  for (const a of doc.annotations) {
-    if (!byPage.has(a.page)) byPage.set(a.page, []);
-    byPage.get(a.page).push(a);
-  }
-  for (const page of [...byPage.keys()].sort((x, y) => x - y)) {
-    lines.push(`## Page ${page}`, '');
-    for (const a of byPage.get(page)) {
+  const sessions = [...(doc.sessions ?? [])].reverse(); // newest first, like the panel
+  const groups = sessions.map((s) => ({ session: s, items: doc.annotations.filter((a) => a.sessionId === s.id) }));
+  const loose = doc.annotations.filter((a) => !a.sessionId || !sessions.some((s) => s.id === a.sessionId));
+  if (loose.length) groups.push({ session: null, items: loose });
+  for (const { session, items } of groups) {
+    lines.push(`## ${session ? session.title || 'Untitled session' : 'Other highlights'}`, '');
+    if (session?.createdAt) lines.push(`_${new Date(session.createdAt).toLocaleString()} · ${items.length} highlight${items.length === 1 ? '' : 's'}_`, '');
+    if (session?.flow) lines.push(session.flow, '');
+    items.forEach((a, i) => {
+      lines.push(`### ${i + 1}. p.${a.page}${a.tag ? ` · #${a.tag}` : ''}${a.title ? ` · ${a.title}` : ''}`, '');
       if (a.quote) lines.push(a.quote.split('\n').map((l) => `> ${l}`).join('\n'), '');
-      if (a.title) lines.push(`**${a.title}**`, '');
       if (a.note) lines.push(a.note, '');
-      lines.push(`_${[a.color, a.tag && `#${a.tag}`, a.id].filter(Boolean).join(' · ')}_`, '');
-    }
+      lines.push(`_${[a.color, a.source === 'user' ? 'by hand' : '', a.id].filter(Boolean).join(' · ')}_`, '');
+    });
   }
   await fs.writeFile(target, lines.join('\n'));
   return doc.annotations.length;

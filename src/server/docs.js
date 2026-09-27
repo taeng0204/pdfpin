@@ -142,6 +142,15 @@ export class DocManager {
       .map((h) => ({ page: h.page, score: h.score, context: h.context }));
   }
 
+  /** Resolve the session an annotation should belong to: explicit id, null for none, or the document's current one. */
+  _sessionFor(doc, spec) {
+    if (spec.sessionId === null) return null;
+    const fresh = this.store.get(doc.id);
+    if (spec.sessionId === undefined) return fresh.currentSessionId ?? null;
+    if (!fresh.sessions.some((s) => s.id === spec.sessionId)) throw new ApiError(404, `Session ${spec.sessionId} not found`);
+    return spec.sessionId;
+  }
+
   _validateCommon(spec) {
     if (spec.color !== undefined && spec.color !== null && !COLORS.includes(spec.color)) {
       throw new ApiError(400, `Unknown color "${spec.color}". Use one of: ${COLORS.join(', ')}`);
@@ -169,11 +178,12 @@ export class DocManager {
       throw new ApiError(422, `Text not found${page ? ` on page ${page}` : ''}: "${collapse(spec.text).slice(0, 80)}"`, { suggestions });
     }
     const pdf = await this.pdf(doc);
+    const sessionId = this._sessionFor(doc, spec);
     const create = async (h) => {
       const idx = await getPageIndex(pdf, h.page);
       const ann = this.store.addAnnotation(doc.id, {
         page: h.page, quote: h.quote, note: spec.note ?? '', title: spec.title ?? '', color: spec.color ?? 'yellow', tag: spec.tag ?? '',
-        anchor: h.anchor, rects: approxRects(idx, h.anchor), rectsSource: 'approx', score: h.score, source: spec.source === 'user' ? 'user' : 'agent',
+        anchor: h.anchor, rects: approxRects(idx, h.anchor), rectsSource: 'approx', score: h.score, source: spec.source === 'user' ? 'user' : 'agent', sessionId,
       });
       this.hub.broadcast(doc.id, 'annotation.added', { annotation: ann });
       return ann;
@@ -199,9 +209,11 @@ export class DocManager {
     if (!ok) throw new ApiError(400, 'Invalid anchor');
     const { start, end } = anchorToOffsets(idx, a);
     const rects = spec.rects?.length ? cleanRects(spec.rects) : null;
+    // people highlighting by hand are not part of an agent session unless they say so
+    const sessionId = this._sessionFor(doc, { ...spec, sessionId: spec.sessionId === undefined ? null : spec.sessionId });
     const ann = this.store.addAnnotation(doc.id, {
       page, quote: spec.quote ?? collapse(idx.text.slice(start, end)), note: spec.note ?? '', title: spec.title ?? '', color: spec.color ?? 'yellow', tag: spec.tag ?? '',
-      anchor: a, rects: rects ?? approxRects(idx, a), rectsSource: rects ? 'dom' : 'approx', score: 1, source: spec.source ?? 'user',
+      anchor: a, rects: rects ?? approxRects(idx, a), rectsSource: rects ? 'dom' : 'approx', score: 1, source: spec.source ?? 'user', sessionId,
     });
     this.hub.broadcast(doc.id, 'annotation.added', { annotation: ann });
     return ann;
@@ -212,9 +224,10 @@ export class DocManager {
     const pdf = await this.pdf(doc);
     if (page < 1 || page > pdf.numPages) throw new ApiError(400, `Page ${page} is out of range`);
     const rects = cleanRects(spec.rects);
+    const sessionId = this._sessionFor(doc, spec);
     const ann = this.store.addAnnotation(doc.id, {
       page, quote: spec.quote ?? '', note: spec.note ?? '', title: spec.title ?? '', color: spec.color ?? 'yellow', tag: spec.tag ?? '',
-      anchor: null, rects, rectsSource: 'dom', score: 1, source: spec.source ?? 'agent',
+      anchor: null, rects, rectsSource: 'dom', score: 1, source: spec.source ?? 'agent', sessionId,
     });
     this.hub.broadcast(doc.id, 'annotation.added', { annotation: ann });
     return ann;
@@ -224,6 +237,7 @@ export class DocManager {
     this._validateCommon(patch);
     const clean = {};
     for (const k of ['note', 'title', 'color', 'tag', 'quote']) if (patch[k] !== undefined) clean[k] = patch[k];
+    if (patch.sessionId !== undefined) clean.sessionId = this._sessionFor(doc, { sessionId: patch.sessionId });
     if (Array.isArray(patch.rects)) {
       clean.rects = cleanRects(patch.rects, { allowEmpty: true });
       clean.rectsSource = clean.rects.length ? 'dom' : 'none';
@@ -245,14 +259,55 @@ export class DocManager {
     return removed;
   }
 
-  setSummary(doc, summary) {
-    const s = this.store.setSummary(doc.id, summary);
-    this.hub.broadcast(doc.id, 'summary.updated', { summary: s });
-    return s;
+  /** Create a session, optionally with its highlights. Highlights that fail to match do not abort the rest. */
+  async addSession(doc, spec) {
+    if (!spec || typeof spec !== 'object') throw new ApiError(400, 'Session spec must be an object');
+    for (const k of ['title', 'flow']) if (spec[k] !== undefined && spec[k] !== null && typeof spec[k] !== 'string') throw new ApiError(400, `"${k}" must be a string`);
+    if (spec.highlights !== undefined && !Array.isArray(spec.highlights)) throw new ApiError(400, '"highlights" must be an array');
+    const session = this.store.addSession(doc.id, { title: spec.title ?? '', flow: spec.flow ?? '', source: spec.source === 'user' ? 'user' : 'agent' });
+    this.hub.broadcast(doc.id, 'session.added', { session });
+    const results = [];
+    for (const h of spec.highlights ?? []) {
+      try {
+        results.push({ ok: true, ...(await this.add(doc, { ...h, sessionId: session.id })) });
+      } catch (e) {
+        if (!(e instanceof ApiError)) throw e;
+        results.push({ ok: false, error: e.message, ...e.extra, spec: { text: h?.text, page: h?.page } });
+      }
+    }
+    return { session, results, added: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length };
   }
 
-  async focus(doc, { annotationId, page }) {
+  updateSession(doc, sessionId, patch) {
+    for (const k of ['title', 'flow']) if (patch[k] !== undefined && typeof patch[k] !== 'string') throw new ApiError(400, `"${k}" must be a string`);
+    const session = this.store.updateSession(doc.id, sessionId, patch);
+    if (!session) throw new ApiError(404, `Session ${sessionId} not found`);
+    this.hub.broadcast(doc.id, 'session.updated', { session });
+    return session;
+  }
+
+  removeSession(doc, sessionId) {
+    const removed = this.store.removeSession(doc.id, sessionId);
+    if (removed < 0) throw new ApiError(404, `Session ${sessionId} not found`);
+    this.hub.broadcast(doc.id, 'session.removed', { id: sessionId, removedAnnotations: removed, currentSessionId: this.store.get(doc.id).currentSessionId });
+    return removed;
+  }
+
+  useSession(doc, sessionId) {
+    if (sessionId !== null && !this.store.getSession(doc.id, sessionId)) throw new ApiError(404, `Session ${sessionId} not found`);
+    this.store.setCurrentSession(doc.id, sessionId);
+    this.hub.broadcast(doc.id, 'session.current', { currentSessionId: sessionId });
+    return sessionId;
+  }
+
+  async focus(doc, { annotationId, page, sessionId }) {
     const fresh = this.store.get(doc.id);
+    if (sessionId) {
+      const first = fresh.annotations.find((a) => a.sessionId === sessionId);
+      if (!fresh.sessions.some((s) => s.id === sessionId)) throw new ApiError(404, `Session ${sessionId} not found`);
+      this.hub.broadcast(doc.id, 'focus', { sessionId, annotationId: first?.id, page: first?.page });
+      return { sessionId, page: first?.page ?? null };
+    }
     if (annotationId) {
       const ann = fresh.annotations.find((a) => a.id === annotationId);
       if (!ann) throw new ApiError(404, `Annotation ${annotationId} not found`);

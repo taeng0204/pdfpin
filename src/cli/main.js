@@ -121,6 +121,8 @@ program
   .option('--tag <tag>', 'group label, e.g. the question this evidence answers')
   .option('--title <title>', 'short heading for the note')
   .option('--all', 'highlight every occurrence instead of the first')
+  .option('-s, --session <id>', 'attach to this session (default: the latest session)')
+  .option('--no-session', 'do not attach to any session')
   .option('--json <spec>', 'batch: a JSON array (or one object) of {text, note, page, color, tag, title, all}')
   .option('--from <file>', 'batch: read the JSON spec from a file')
   .option('--stdin', 'batch: read the JSON spec from stdin')
@@ -134,6 +136,8 @@ program
       if (!opts.text) throw new CliError('Provide --text "<quote>" (or a batch via --json/--from/--stdin). See `pdfpin guide`.');
       spec = { text: opts.text, note: unescapeText(opts.note), page: opts.page, color: opts.color, tag: opts.tag, title: unescapeText(opts.title), all: !!opts.all };
     }
+    const sessionField = opts.session === false ? { sessionId: null } : typeof opts.session === 'string' ? { sessionId: opts.session } : {};
+    spec = Array.isArray(spec) ? spec.map((x) => ({ ...x, ...sessionField })) : { ...spec, ...sessionField };
     const c = await client({ start: false });
     const ref = docRef();
     if (Array.isArray(spec)) {
@@ -161,20 +165,123 @@ program
 
 program
   .command('list')
-  .description('list annotations of the document')
+  .description('list sessions and annotations of the document')
   .option('--tag <tag>', 'only this tag')
+  .option('-s, --session <id>', 'only this session')
   .option('--json', 'machine-readable output')
   .action(async (opts) => {
     const c = await client({ start: false });
     const { doc } = await c.call('GET', `/api/docs/${docRef()}`);
     let anns = doc.annotations;
     if (opts.tag) anns = anns.filter((a) => a.tag === opts.tag);
-    if (opts.json) return json({ doc: { id: doc.id, title: doc.title, pages: doc.pages, summary: doc.summary }, annotations: anns });
-    if (doc.summary?.title) out(`Summary: ${doc.summary.title}`);
-    if (!anns.length) return out('No annotations.');
-    for (const a of anns) {
-      out(`${a.id}  p.${String(a.page).padEnd(3)} ${a.color.padEnd(6)} ${a.tag ? `#${a.tag} ` : ''}"${trunc(a.quote, 60)}"${a.note ? `  — ${trunc(a.note.replace(/\s+/g, ' '), 80)}` : ''}`);
+    if (opts.session) anns = anns.filter((a) => a.sessionId === opts.session);
+    if (opts.json) return json({ doc: { id: doc.id, title: doc.title, pages: doc.pages, currentSessionId: doc.currentSessionId }, sessions: doc.sessions, annotations: anns });
+    if (!anns.length && !doc.sessions.length) return out('No annotations.');
+    const line = (a, i) => out(`${i !== undefined ? `${String(i + 1).padStart(2)}. ` : '    '}${a.id}  p.${String(a.page).padEnd(3)} ${a.color.padEnd(6)} ${a.tag ? `#${a.tag} ` : ''}"${trunc(a.quote, 56)}"${a.note ? `  — ${trunc(a.note.replace(/\s+/g, ' '), 70)}` : ''}`);
+    for (const s of [...doc.sessions].reverse()) {
+      const items = anns.filter((a) => a.sessionId === s.id);
+      if (opts.session && s.id !== opts.session) continue;
+      out(`${s.id === doc.currentSessionId ? '*' : ' '} ${s.id}  ${s.title || '(untitled)'}  · ${items.length} highlight${items.length === 1 ? '' : 's'} · ${s.createdAt.slice(0, 16).replace('T', ' ')}`);
+      if (s.flow) out(`    ${trunc(s.flow.replace(/\s+/g, ' '), 110)}`);
+      items.forEach(line);
     }
+    const loose = anns.filter((a) => !a.sessionId || !doc.sessions.some((s) => s.id === a.sessionId));
+    if (loose.length && !opts.session) { out('  (no session)'); loose.forEach((a) => line(a)); }
+  });
+
+program
+  .command('mark')
+  .description('one structured call: create a session (title + flow) with its highlights')
+  .option('--json <spec>', 'JSON object {title, flow, highlights:[{text, note, page, color, tag, title, all}]}')
+  .option('--from <file>', 'read the JSON object from a file')
+  .option('--stdin', 'read the JSON object from stdin')
+  .option('--title <title>', 'session title (overrides the JSON)')
+  .option('--flow <markdown>', 'session overview (overrides the JSON)')
+  .option('--json-output', 'machine-readable output')
+  .action(async (opts) => {
+    let spec = {};
+    if (opts.json || opts.from || opts.stdin) {
+      const raw = opts.json ?? (opts.from ? fs.readFileSync(opts.from, 'utf8') : fs.readFileSync(0, 'utf8'));
+      try { spec = JSON.parse(raw); } catch (e) { throw new CliError(`Invalid JSON spec: ${e.message}`); }
+    }
+    if (Array.isArray(spec)) spec = { highlights: spec };
+    if (opts.title) spec.title = opts.title;
+    if (opts.flow) spec.flow = opts.flow;
+    spec.title = unescapeText(spec.title);
+    spec.flow = unescapeText(spec.flow);
+    if (!spec.title) throw new CliError('A session needs --title (the question or purpose of this marking).');
+    if (spec.highlights) spec.highlights = spec.highlights.map((h) => ({ ...h, note: unescapeText(h.note), title: unescapeText(h.title) }));
+    const c = await client({ start: false });
+    const r = await c.call('POST', `/api/docs/${docRef()}/sessions`, spec);
+    if (opts.jsonOutput) { json(r); if (r.failed) process.exitCode = 2; return; }
+    out(`session ${r.session.id}  "${trunc(r.session.title, 70)}"`);
+    for (const it of r.results) {
+      if (it.ok) (it.annotations || [it.annotation]).forEach((a) => printAdded(a, it.alternatives));
+      else printNotFound(it.error, it);
+    }
+    if (r.results.length) out(`${r.added} added, ${r.failed} failed`);
+    if (r.failed) { process.exitCode = 2; err(`Fix the failed ones with: pdfpin add --session ${r.session.id} --text "…" --note "…"`); }
+  });
+
+const session = program.command('session').description('manage sessions (one per question or task)');
+session
+  .command('start')
+  .description('start a new session; later `pdfpin add` calls attach to it')
+  .requiredOption('--title <title>', 'the question or purpose')
+  .option('--flow <markdown>', 'overview (can be written later with `session update`)')
+  .action(async (opts) => {
+    const c = await client({ start: false });
+    const r = await c.call('POST', `/api/docs/${docRef()}/sessions`, { title: unescapeText(opts.title), flow: unescapeText(opts.flow) || '' });
+    out(`session ${r.session.id}  "${trunc(r.session.title, 70)}"`);
+  });
+session
+  .command('update')
+  .description('set the title or the flow of a session (default: the current one)')
+  .argument('[id]')
+  .option('--title <title>')
+  .option('--flow <markdown>')
+  .action(async (id, opts) => {
+    if (!opts.title && !opts.flow) throw new CliError('Provide --title and/or --flow.');
+    const c = await client({ start: false });
+    const sid = id || (await c.call('GET', `/api/docs/${docRef()}`)).doc.currentSessionId;
+    if (!sid) throw new CliError('No session yet. Start one with `pdfpin session start --title "…"` or use `pdfpin mark`.');
+    const patch = {};
+    if (opts.title) patch.title = unescapeText(opts.title);
+    if (opts.flow) patch.flow = unescapeText(opts.flow);
+    const r = await c.call('PATCH', `/api/docs/${docRef()}/sessions/${sid}`, patch);
+    out(`session ${r.session.id} updated`);
+  });
+session
+  .command('list')
+  .description('list sessions of the document')
+  .option('--json', 'machine-readable output')
+  .action(async (opts) => {
+    const c = await client({ start: false });
+    const { doc } = await c.call('GET', `/api/docs/${docRef()}`);
+    if (opts.json) return json({ currentSessionId: doc.currentSessionId, sessions: doc.sessions });
+    if (!doc.sessions.length) return out('No sessions.');
+    for (const s of [...doc.sessions].reverse()) {
+      const n = doc.annotations.filter((a) => a.sessionId === s.id).length;
+      out(`${s.id === doc.currentSessionId ? '*' : ' '} ${s.id}  ${n.toString().padStart(2)} hl  ${s.createdAt.slice(0, 16).replace('T', ' ')}  ${s.title || '(untitled)'}`);
+    }
+  });
+session
+  .command('use')
+  .description('make a session current (or "none")')
+  .argument('<id>')
+  .action(async (id) => {
+    const c = await client({ start: false });
+    await c.call('POST', `/api/docs/${docRef()}/sessions/${id}/use`);
+    out(id === 'none' ? 'no current session' : `current session: ${id}`);
+  });
+session
+  .command('rm')
+  .description('delete a session together with its highlights')
+  .argument('<id>')
+  .action(async (id) => {
+    const c = await client({ start: false });
+    const r = await c.call('DELETE', `/api/docs/${docRef()}/sessions/${id}`);
+    out(`removed session ${id} and ${r.removedAnnotations} highlight(s)`);
   });
 
 program
@@ -215,29 +322,23 @@ program
   });
 
 program
-  .command('summary')
-  .description('set the summary card shown at the top of the side panel')
-  .option('--title <title>')
-  .option('--body <markdown>')
-  .option('--clear', 'remove the summary')
-  .action(async (opts) => {
-    const c = await client({ start: false });
-    if (opts.clear) { await c.call('DELETE', `/api/docs/${docRef()}/summary`); return out('summary cleared'); }
-    if (!opts.title && !opts.body) throw new CliError('Provide --title and/or --body (or --clear).');
-    await c.call('PUT', `/api/docs/${docRef()}/summary`, { title: unescapeText(opts.title) || '', body: unescapeText(opts.body) || '' });
-    out('summary updated');
-  });
+  .command('summary', { hidden: true })
+  .argument('[args...]')
+  .allowUnknownOption()
+  .action(() => { throw new CliError('`pdfpin summary` was replaced by sessions: use `pdfpin mark --json …` or `pdfpin session update --flow "…"`.'); });
 
 program
   .command('focus')
   .description('scroll every open viewer to an annotation or a page')
   .argument('[id]', 'annotation id')
   .option('-p, --page <n>', 'page number', Number)
+  .option('-s, --session <id>', 'session id: expands it in the panel and scrolls to its first highlight')
   .action(async (id, opts) => {
-    if (!id && !opts.page) throw new CliError('Give an annotation id or --page N.');
+    if (!id && !opts.page && !opts.session) throw new CliError('Give an annotation id, --page N or --session <id>.');
     const c = await client({ start: false });
-    const r = await c.call('POST', `/api/docs/${docRef()}/focus`, id ? { annotationId: id } : { page: opts.page });
-    out(`focused p.${r.page}${r.annotationId ? ` (${r.annotationId})` : ''}`);
+    const body = opts.session ? { sessionId: opts.session } : id ? { annotationId: id } : { page: opts.page };
+    const r = await c.call('POST', `/api/docs/${docRef()}/focus`, body);
+    out(r.page ? `focused p.${r.page}${r.annotationId ? ` (${r.annotationId})` : ''}${r.sessionId ? ` session ${r.sessionId}` : ''}` : `focused session ${r.sessionId}`);
   });
 
 program

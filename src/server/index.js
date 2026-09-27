@@ -115,8 +115,10 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   route('PATCH', '/api/docs/:id/annotations/:aid', ({ params, body }) => ({ annotation: docs.update(docs.resolve(params.id), params.aid, body || {}) }));
   route('DELETE', '/api/docs/:id/annotations/:aid', ({ params }) => { docs.remove(docs.resolve(params.id), params.aid); return { ok: true, removed: params.aid }; });
   route('DELETE', '/api/docs/:id/annotations', ({ params, query }) => ({ ok: true, removed: docs.clear(docs.resolve(params.id), { tag: query.get('tag') || undefined }) }));
-  route('PUT', '/api/docs/:id/summary', ({ params, body }) => ({ summary: docs.setSummary(docs.resolve(params.id), body || {}) }));
-  route('DELETE', '/api/docs/:id/summary', ({ params }) => ({ summary: docs.setSummary(docs.resolve(params.id), null) }));
+  route('POST', '/api/docs/:id/sessions', async ({ params, body, res }) => { res.statusCode = 201; return docs.addSession(docs.resolve(params.id), body || {}); });
+  route('PATCH', '/api/docs/:id/sessions/:sid', ({ params, body }) => ({ session: docs.updateSession(docs.resolve(params.id), params.sid, body || {}) }));
+  route('DELETE', '/api/docs/:id/sessions/:sid', ({ params }) => { const d = docs.resolve(params.id); return { ok: true, removed: params.sid, removedAnnotations: docs.removeSession(d, params.sid) }; });
+  route('POST', '/api/docs/:id/sessions/:sid/use', ({ params }) => ({ currentSessionId: docs.useSession(docs.resolve(params.id), params.sid === 'none' ? null : params.sid) }));
   route('POST', '/api/docs/:id/focus', ({ params, body }) => docs.focus(docs.resolve(params.id), body || {}));
   route('POST', '/api/docs/:id/export', async ({ params, body }) => {
     const { exportDocument } = await import('./export.js');

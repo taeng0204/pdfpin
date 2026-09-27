@@ -3,8 +3,9 @@
 An agent-friendly PDF viewer. A local viewer with a side panel of notes, plus a CLI that lets
 AI agents (Claude Code, Codex, Gemini CLI, …) or humans pin highlights and explanations onto a PDF.
 
-> "Find the evidence in this paper for X" → the agent reads the PDF with `pdfpin text`, runs
-> `pdfpin add --text "…" --note "…"` for each passage, and the viewer highlights them live.
+> "Find the evidence in this paper for X" → the agent reads the PDF with `pdfpin text`, then runs one
+> `pdfpin mark --json '{title, flow, highlights:[…]}'` call. The viewer shows the session (its overview and
+> colour-coded highlights with notes) live, and keeps every session as the document's history.
 
 Works on macOS and Windows (and Linux) with Node ≥ 18. No native build step.
 
@@ -23,9 +24,9 @@ For Claude Code, copy `skill/SKILL.md` to `~/.claude/skills/pdfpin/SKILL.md` (or
 ```bash
 pdfpin open paper.pdf                       # starts the daemon, opens the viewer window
 pdfpin text -p 1-3                          # read page text (find exact quotes here)
-pdfpin add --text "exact quote" --note "why it matters" --tag claim-1 --color green
-pdfpin add --json '[{"text":"…","note":"…"},{"text":"…","note":"…","page":5}]'
-pdfpin summary --title "Evidence for X" --body "Three passages support X…"
+pdfpin mark --json '{"title":"Evidence for X","flow":"Two passages: (1) … (2) …","highlights":[{"text":"…","note":"…","color":"green","tag":"coverage"}]}'
+pdfpin add --text "exact quote" --note "why it matters" --tag claim-1 --color green   # attaches to the latest session
+pdfpin session start --title "…" · session update --flow "…" · session list · session rm <id>
 pdfpin list · pdfpin rm <id> · pdfpin clear --tag claim-1
 pdfpin focus <id>                           # scroll the viewer to a highlight
 pdfpin export                               # paper.annotated.pdf with real highlight annotations
@@ -36,15 +37,16 @@ pdfpin status · pdfpin stop
 ## Viewer
 
 - Live updates: highlights and notes appear as the agent adds them (toast + card).
-- Side panel: summary card, notes grouped by page, filter by text / tag / colour, inline edit,
-  copy a note as a Markdown citation, copy everything, export.
+- Side panel: sessions newest-first (title, overview, highlights grouped by tag/colour with notes);
+  older sessions collapse into the document's history. Filter by text / tag / colour, focus one session,
+  inline edit, copy a note as a Markdown citation, copy everything, export.
 - Hover a highlight for a popover with the note; click to select; `n`/`p` step through notes.
 - Evidence strip: a minimap of highlights along the right edge; click to jump.
 - Search in the document (`⌘/Ctrl+F`), zoom (`⌘/Ctrl +/−/0`, ctrl+wheel), fit width / fit page.
 - Select text on a page → floating toolbar → highlight in a colour, optionally with a note.
 - Light / dark theme (`d`), dimmed pages in dark mode, panel toggle (`t`), hide highlights (`h`).
-- History drawer (`l` or the clock button): every PDF opened so far with its note count, tags and
-  summary; click one to open it instantly (it also becomes the CLI's current document).
+- Documents drawer (`l` or the library button): every PDF opened so far with its note count, tags and
+  latest session; click one to open it instantly (it also becomes the CLI's current document).
 
 ## How it works
 

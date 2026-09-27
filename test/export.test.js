@@ -33,7 +33,8 @@ before(async () => {
   withRects = (await docs.add(doc, { text: 'higher code coverage than KLEE', note: 'Coverage claim', title: 'Claim', color: 'green', tag: 'evidence' })).annotation;
   noRects = (await docs.add(doc, { text: 'Page two', note: 'Second page note' })).annotation;
   docs.update(doc, noRects.id, { rects: [] });
-  docs.setSummary(doc, { title: 'Evidence for X', body: 'Three passages support it.' });
+  const session = docs.store.addSession(doc.id, { title: 'Evidence for X', flow: 'Three passages support it.' });
+  for (const a of docs.store.get(doc.id).annotations) docs.store.updateAnnotation(doc.id, a.id, { sessionId: session.id });
 });
 
 after(async () => {
@@ -80,7 +81,7 @@ test('pdf export keeps an existing indirect Annots array and appends to it', asy
   assert.equal(annots[1].get(PDFName.of('Subtype')).toString(), '/Highlight');
 });
 
-test('md export lists the summary, page headers, quotes and notes', async () => {
+test('md export groups highlights by session with the flow, quotes and notes', async () => {
   const r = await exportDocument(docs, doc, { format: 'md' });
   assert.equal(r.format, 'md');
   assert.equal(r.count, 2);
@@ -89,10 +90,10 @@ test('md export lists the summary, page headers, quotes and notes', async () => 
   const md = fs.readFileSync(r.path, 'utf8');
   assert.match(md, /^# Fixture Paper\n/);
   assert.ok(md.includes(pdfPath));
-  assert.match(md, /## Evidence for X\n\nThree passages support it\./);
-  assert.match(md, /## Page 1\n\n> higher code coverage than KLEE\n\n\*\*Claim\*\*\n\nCoverage claim\n\n_green · #evidence · a_[a-z0-9]{6}_/);
-  assert.match(md, /## Page 2\n\n> Page two\n\nSecond page note\n\n_yellow · a_[a-z0-9]{6}_/);
-  assert.ok(md.indexOf('## Page 1') < md.indexOf('## Page 2'));
+  assert.match(md, /## Evidence for X\n\n_.*2 highlights_\n\nThree passages support it\./);
+  assert.match(md, /### 1\. p\.1 · #evidence · Claim\n\n> higher code coverage than KLEE\n\nCoverage claim\n\n_green · a_[a-z0-9]{6}_/);
+  assert.match(md, /### 2\. p\.2\n\n> Page two\n\nSecond page note\n\n_yellow · a_[a-z0-9]{6}_/);
+  assert.ok(!md.includes('## Other highlights'));
 });
 
 test('unknown format is rejected with status 400', async () => {

@@ -109,6 +109,24 @@ test('batch add reports per-item results without aborting', async () => {
   assert.equal(r.json.results[1].ok, false);
 });
 
+test('SSE stream delivers session events', async () => {
+  const ctrl = new AbortController();
+  const res = await fetch(`${base}/api/docs/${docId}/events`, { signal: ctrl.signal });
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  const posted = await api('POST', `/api/docs/${docId}/sessions`, { title: 'SSE session' });
+  let buf = '';
+  const deadline = Date.now() + 3000;
+  while (!buf.includes('session.added') && Date.now() < deadline) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value);
+  }
+  ctrl.abort();
+  assert.match(buf, /event: session\.added/);
+  assert.match(buf, new RegExp(posted.json.session.id));
+});
+
 test('SSE stream delivers annotation events', async () => {
   const ctrl = new AbortController();
   const res = await fetch(`${base}/api/docs/${docId}/events`, { signal: ctrl.signal });
@@ -141,12 +159,51 @@ test('patching rects marks them as DOM-sourced', async () => {
   assert.equal((await api('DELETE', `/api/docs/${docId}/annotations/${id}`)).status, 404);
 });
 
-test('summary can be set, read and cleared', async () => {
-  const r = await api('PUT', `/api/docs/${docId}/summary`, { title: 'Evidence for X', body: '**three** passages' });
-  assert.equal(r.status, 200);
-  assert.equal((await api('GET', `/api/docs/${docId}`)).json.doc.summary.title, 'Evidence for X');
-  assert.equal((await api('DELETE', `/api/docs/${docId}/summary`)).status, 200);
-  assert.equal((await api('GET', `/api/docs/${docId}`)).json.doc.summary, null);
+test('a session can be created with structured highlights in one call', async () => {
+  const r = await api('POST', `/api/docs/${docId}/sessions`, {
+    title: 'Evidence for X',
+    flow: 'Two passages support it: coverage (1) and bugs (2).',
+    highlights: [
+      { text: 'higher code coverage than KLEE', note: 'coverage', color: 'green', tag: 'coverage' },
+      { text: 'zzz nowhere zzz', note: 'nope' },
+      { text: 'Page two mentions', note: 'bugs', color: 'pink', tag: 'bugs' },
+    ],
+  });
+  assert.equal(r.status, 201, r.text);
+  assert.match(r.json.session.id, /^s_/);
+  assert.equal(r.json.added, 2);
+  assert.equal(r.json.failed, 1);
+  assert.equal(r.json.results[1].ok, false);
+  assert.ok(Array.isArray(r.json.results[1].suggestions));
+  const doc = (await api('GET', `/api/docs/${docId}`)).json.doc;
+  assert.equal(doc.currentSessionId, r.json.session.id);
+  assert.equal(doc.annotations.filter((a) => a.sessionId === r.json.session.id).length, 2);
+});
+
+test('annotations attach to the current session unless told otherwise', async () => {
+  const s = await api('POST', `/api/docs/${docId}/sessions`, { title: 'Follow-up' });
+  const withSession = await api('POST', `/api/docs/${docId}/annotations`, { text: 'Hello World', note: '' });
+  assert.equal(withSession.json.annotation.sessionId, s.json.session.id);
+  const without = await api('POST', `/api/docs/${docId}/annotations`, { text: 'Hello World', note: '', sessionId: null });
+  assert.equal(without.json.annotation.sessionId, null);
+  const explicit = await api('POST', `/api/docs/${docId}/annotations`, { text: 'Hello World', note: '', sessionId: 's_nope00' });
+  assert.equal(explicit.status, 404);
+});
+
+test('sessions can be updated, listed and removed together with their highlights', async () => {
+  const s = await api('POST', `/api/docs/${docId}/sessions`, { title: 'Temp', highlights: [{ text: 'Second line', note: 'x' }] });
+  const sid = s.json.session.id;
+  const upd = await api('PATCH', `/api/docs/${docId}/sessions/${sid}`, { flow: 'now with a flow', title: 'Temp 2' });
+  assert.equal(upd.status, 200);
+  assert.equal(upd.json.session.flow, 'now with a flow');
+  const before = (await api('GET', `/api/docs/${docId}`)).json.doc.annotations.length;
+  const del = await api('DELETE', `/api/docs/${docId}/sessions/${sid}`);
+  assert.equal(del.status, 200);
+  assert.equal(del.json.removedAnnotations, 1);
+  const doc = (await api('GET', `/api/docs/${docId}`)).json.doc;
+  assert.equal(doc.annotations.length, before - 1);
+  assert.ok(!doc.sessions.some((x) => x.id === sid));
+  assert.equal((await api('DELETE', `/api/docs/${docId}/sessions/${sid}`)).status, 404);
 });
 
 test('focus accepts a page or an annotation id', async () => {

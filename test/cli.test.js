@@ -53,10 +53,28 @@ test('cli drives a daemon end to end: open, text, add, list, rm, stop', async ()
     const find = run(['find', 'fuzzing', '--json'], env);
     assert.equal(JSON.parse(find.out).hits.length, 2);
 
-    const summary = run(['summary', '--title', 'Evidence for X', '--body', 'two passages:\\n- a\\n- b'], env);
-    assert.equal(summary.code, 0, summary.err);
-    const withSummary = JSON.parse(run(['list', '--json'], env).out);
-    assert.equal(withSummary.doc.summary.body, 'two passages:\n- a\n- b'); // literal \n becomes a line break
+    const mark = run(['mark', '--json', JSON.stringify({ title: 'Evidence for X', flow: 'two passages:\\n- a\\n- b', highlights: [{ text: 'Page two', note: 'p2', color: 'blue', tag: 'ev' }, { text: 'zzz nope' }] })], env);
+    assert.equal(mark.code, 2, mark.err); // one highlight failed
+    assert.match(mark.out, /session s_[0-9a-z]{6}/);
+    assert.match(mark.out, /1 added, 1 failed/);
+    const listed = JSON.parse(run(['list', '--json'], env).out);
+    assert.equal(listed.sessions.length, 1);
+    assert.equal(listed.sessions[0].flow, 'two passages:\n- a\n- b'); // literal \n becomes a line break
+    assert.equal(listed.annotations.filter((a) => a.sessionId === listed.sessions[0].id).length, 1);
+    const attached = run(['add', '--text', 'Hello World', '--note', 'attached to current session'], env);
+    assert.equal(attached.code, 0, attached.err);
+    const detached = run(['add', '--text', 'Hello World', '--note', 'no session', '--no-session'], env);
+    assert.equal(detached.code, 0, detached.err);
+    const after = JSON.parse(run(['list', '--json'], env).out);
+    assert.equal(after.annotations.filter((a) => a.sessionId === listed.sessions[0].id).length, 2);
+    assert.equal(after.annotations.filter((a) => !a.sessionId).length, 2);
+    const upd = run(['session', 'update', '--flow', 'final overview'], env);
+    assert.equal(upd.code, 0, upd.err);
+    const sessions = run(['session', 'list'], env);
+    assert.match(sessions.out, /Evidence for X/);
+    const legacy = run(['summary', '--title', 'x'], env);
+    assert.equal(legacy.code, 1);
+    assert.match(legacy.err, /replaced by sessions/);
 
     const status = run(['status'], env);
     assert.match(status.out, /running/);

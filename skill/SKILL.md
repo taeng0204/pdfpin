@@ -5,8 +5,15 @@ description: Highlight passages in a PDF and attach explanations that a human re
 
 # pdfpin — pin highlights and notes onto a PDF
 
-`pdfpin` is a CLI plus a local viewer. You (the agent) read the PDF text with the CLI, then
-add highlights with short notes; the human sees them live in the viewer's side panel.
+`pdfpin` is a CLI plus a local viewer. You (the agent) read the PDF text with the CLI, then mark
+passages with short notes; the human sees them live in the viewer's side panel.
+
+## Model
+
+- A **session** = one interaction: `title` (the question or purpose), `flow` (your overview: what
+  you found, how the pieces connect, caveats), and its **highlights**, each with a `note`.
+- The side panel lists sessions newest-first as the document's history. Older sessions collapse.
+- Highlights without a session belong to the reader (made by hand in the viewer).
 
 ## Workflow
 
@@ -20,28 +27,34 @@ add highlights with short notes; the human sees them live in the viewer's side p
    pdfpin text -p 3-5     # a page range
    pdfpin find "phrase"   # page + context for a phrase
    ```
-3. Add highlights. One per passage, or a batch in one call:
+3. Mark in one structured call:
    ```bash
-   pdfpin add --text "exact sentence or phrase from the PDF" --note "Why it matters (Markdown)" --tag "claim-1" --color green
-   pdfpin add --json '[{"text":"...","note":"...","page":4,"color":"green","tag":"claim-1"},{"text":"...","note":"..."}]'
+   pdfpin mark --json '{
+     "title": "Evidence that the method beats the baseline",
+     "flow": "Two lines of evidence: coverage (1) and bugs (2). Caveat: (3) shows the approximation.",
+     "highlights": [
+       {"text": "exact sentence from the PDF", "note": "Headline result, +8.6% coverage", "color": "green", "tag": "coverage"},
+       {"text": "exact sentence from the PDF", "note": "40 bugs on 22 binaries", "color": "pink", "tag": "bugs", "page": 2},
+       {"text": "exact sentence from the PDF", "note": "Approximate constraints, no SMT", "color": "blue", "tag": "caveat"}
+     ]}'
    ```
-4. Summarise your finding at the top of the panel:
-   ```bash
-   pdfpin summary --title "Evidence for X" --body "Three passages support X:\n- ...\n- ..."
-   ```
-5. Optionally point the reader somewhere: `pdfpin focus <annotation id>` or `pdfpin focus --page 4`.
+   Output: the session id, one line per highlight, and `N added, M failed`. Failed quotes come with
+   nearby candidates; fix them with `pdfpin add --session <id> --text "…" --note "…"`.
+4. Refine if needed: `pdfpin session update --flow "…"`, `pdfpin note <id> --note "…"`, `pdfpin rm <id>`.
+5. Optionally point the reader somewhere: `pdfpin focus --session <id>` or `pdfpin focus <annotation id>`.
 
 ## Rules
 
 - Quote text **exactly as printed in `pdfpin text`** (5–300 characters, one page at a time; split quotes that cross pages).
   Case, whitespace and end-of-line hyphenation do not matter; small typos are tolerated.
-- Exit code 2 = text not found. The output lists up to three nearby candidates with page numbers; retry with one of them.
-- The same phrase can occur several times: pass `--page N`, or `--all` to highlight every occurrence.
-- Notes: short, specific, Markdown subset (`**bold**`, `*italic*`, `` `code` ``, `- lists`, links). Say *why* the passage matters for the question.
-- Use `--tag` per question/claim and a consistent colour per tag. Colours: yellow (default), green, blue, pink, purple, orange.
-- Before answering a new question on the same PDF, either keep old tags (the reader can filter) or `pdfpin clear --tag <old>`.
-- `pdfpin list` shows what is already there; `pdfpin rm <id>` / `pdfpin note <id> --note "..."` fix mistakes.
-- `pdfpin export` writes `<name>.annotated.pdf` with real PDF highlight annotations; `--format md` writes a Markdown report.
+- Exit code 2 = something was not found. The output lists up to three nearby candidates with page numbers; retry with one.
+- The same phrase can occur several times: pass `"page": N`, or `"all": true` to highlight every occurrence.
+- `flow` is the reader's overview: 2–5 sentences, refer to highlights by number (1), (2) or by tag. Notes: one or
+  two sentences on *why* the passage matters. Markdown subset (`**bold**`, `*italic*`, `` `code` ``, `- lists`, links).
+- One question → one session. Do not clear old sessions; the reader keeps them as history.
+- Colours: yellow (default), green, blue, pink, purple, orange. Keep one colour per tag within a session.
+- `pdfpin list` shows sessions and highlights; `pdfpin export` writes `<name>.annotated.pdf` with real PDF
+  highlight annotations; `--format md` writes a Markdown report grouped by session.
 - Every command accepts `-d <id|path|file name>` to target a document that is not the current one.
 
 Run `pdfpin guide` for the full command reference.
