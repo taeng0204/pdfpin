@@ -173,10 +173,14 @@ button, input, textarea { font: inherit; color: inherit; }
 .app.hide-highlights .hl { display: none; }
 
 /* evidence strip */
-.strip { position: sticky; top: 0; float: right; width: 12px; height: 100%; margin-left: -12px; z-index: 6; cursor: pointer; }
-.strip-mark { position: absolute; left: 3px; width: 6px; height: 3px; border-radius: 2px; background: var(--hl-color, var(--hl-yellow)); opacity: 0.9; }
-.strip-mark.selected { outline: 1px solid var(--ink); }
-.strip-view { position: absolute; left: 2px; right: 2px; background: rgba(0,0,0,0.05); border-radius: 3px; pointer-events: none; }
+.viewer-wrap { position: relative; display: grid; min-width: 0; min-height: 0; }
+.strip { position: absolute; top: 0; bottom: 0; right: 11px; width: 10px; z-index: 6; cursor: pointer; }
+.strip[hidden] { display: none; }
+.strip-mark { position: absolute; left: 1px; width: 8px; height: 3px; border-radius: 2px; background: var(--hl-color, var(--hl-yellow)); opacity: 0.55; transition: opacity 120ms, transform 120ms; }
+.strip:hover .strip-mark { opacity: 0.95; }
+.strip-mark.selected { opacity: 1; transform: scaleX(1.25); }
+.strip-view { position: absolute; left: 0; right: 0; background: var(--hover); border-radius: 3px; pointer-events: none; opacity: 0; transition: opacity 120ms; }
+.strip:hover .strip-view { opacity: 1; }
 :root[data-theme="dark"] .strip-view { background: rgba(255,255,255,0.08); }
 
 /* ---------- panel: the document's history ---------- */

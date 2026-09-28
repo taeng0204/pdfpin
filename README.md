@@ -45,7 +45,8 @@ pdfpin status · pdfpin stop
   older sessions collapse into the document's history. Filter by text / tag / colour, focus one session,
   inline edit, copy a note as a Markdown citation, copy everything, export.
 - Hover a highlight for a popover with the note; click to select; `n`/`p` step through notes.
-- Evidence strip: a minimap of highlights along the right edge; click to jump.
+- Highlight rail: a minimap of every highlight along the right edge, beside the scrollbar. Click a tick
+  to jump to it. It hides itself when the document has no highlights.
 - Search in the document (`⌘/Ctrl+F`), zoom (`⌘/Ctrl +/−/0`, ctrl+wheel), fit width / fit page.
 - Select text on a page → floating toolbar → highlight in a colour, optionally with a note.
 - Light / dark theme (`d`) or follow the system, dimmed pages in dark mode, hide highlights (`h`).

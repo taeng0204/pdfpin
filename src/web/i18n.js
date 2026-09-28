@@ -25,6 +25,7 @@ const EN = {
   'top.documents': 'Documents ({key})',
   'top.history': 'History ({key})',
   'top.settings': 'Settings ({key})',
+  'top.strip': 'Highlights in this document. Click to jump.',
   'search.noResults': 'No results',
 
   'panel.heading': 'History',
@@ -215,6 +216,7 @@ const KO = {
   'top.documents': '문서 목록 ({key})',
   'top.history': '기록 패널 ({key})',
   'top.settings': '설정 ({key})',
+  'top.strip': '이 문서의 하이라이트 위치. 눌러서 이동합니다.',
   'search.noResults': '결과 없음',
 
   'panel.heading': '기록',

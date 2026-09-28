@@ -48,11 +48,13 @@
   </header>
 
   <main class="main" id="main">
-    <section class="viewer" id="viewer" tabindex="-1">
-      <div class="pages" id="pages"></div>
-      <div class="loading" id="loading"><div class="spinner"></div><span id="loading-text">Opening document…</span></div>
-      <div class="strip" id="strip" title="Highlights in this document"><div class="strip-view" id="strip-view"></div></div>
-    </section>
+    <div class="viewer-wrap">
+      <section class="viewer" id="viewer" tabindex="-1">
+        <div class="pages" id="pages"></div>
+        <div class="loading" id="loading"><div class="spinner"></div><span id="loading-text">Opening document…</span></div>
+      </section>
+      <div class="strip" id="strip" hidden><div class="strip-view" id="strip-view"></div></div>
+    </div>
 
     <aside class="panel" id="panel">
       <div class="panel-head">

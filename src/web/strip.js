@@ -11,7 +11,9 @@ export function initStrip({ viewer }) {
     const H = strip.clientHeight || viewer.viewerEl.clientHeight;
     for (const m of marks.values()) m.remove();
     marks = new Map();
-    for (const a of orderedAnnotations()) {
+    const all = orderedAnnotations();
+    strip.hidden = !all.length;
+    for (const a of all) {
       const ps = viewer.pages[a.page - 1];
       if (!ps) continue;
       const r = a.rects?.[0];
