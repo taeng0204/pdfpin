@@ -118,20 +118,32 @@ export function autoInstall({ env = process.env, home = os.homedir() } = {}) {
 }
 
 /**
- * npm hides what a postinstall script prints, so the skill can land in your home without you ever
- * being told. Say it once, on the first `pdfpin open` that follows. Returns the line to print, or
- * null; the flag is only written once there was something to say, so a skill installed later is
- * still announced.
+ * npm hides what a postinstall script prints, and it may refuse to run the script at all, so the
+ * skill can land in your home without you being told — or quietly not land. Say which it was, once,
+ * on the first `pdfpin open` that follows. The flag is only written once there was something to
+ * say, so a skill installed later is still announced.
  */
 export function pendingNotice(pdfpinHome, home = os.homedir()) {
   const flag = path.join(pdfpinHome, '.skill-notice');
   if (fs.existsSync(flag)) return null;
-  const rows = status(home).filter((t) => t.state === 'current' || t.state === 'outdated');
-  if (!rows.length) return null;
+  const rows = status(home);
+  const names = (list) => list.map((t) => t.label).join(' and ');
+  const installed = rows.filter((t) => t.state === 'current' || t.state === 'outdated');
+  const missing = rows.filter((t) => t.present && t.state === 'absent');
+
+  let line = null;
+  if (installed.length) {
+    line = `Skill installed for ${names(installed)} — ask your agent to highlight the evidence in a PDF.\n`
+      + '`pdfpin skill` shows where it lives, `pdfpin skill remove` takes it out.';
+  } else if (missing.length) {
+    line = `${names(missing)} ${missing.length > 1 ? 'are' : 'is'} on this machine, but cannot drive pdfpin yet.\n`
+      + 'Run `pdfpin skill install` to hand over the skill.';
+  }
+  if (!line) return null;
+
   try {
     fs.mkdirSync(pdfpinHome, { recursive: true });
     fs.writeFileSync(flag, `${new Date().toISOString()}\n`);
   } catch { return null; }
-  return `Skill installed for ${rows.map((t) => t.label).join(' and ')} — ask your agent to highlight the evidence in a PDF.\n`
-    + '`pdfpin skill` shows where it lives, `pdfpin skill remove` takes it out.';
+  return line;
 }

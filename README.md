@@ -34,7 +34,8 @@ Installing globally also puts the agent skill in place, which is what lets an ag
 at all. Claude Code and Codex read the same skill format, so one file goes to
 `~/.claude/skills/pdfpin/` and `~/.codex/skills/pdfpin/` — only for the agents you actually have —
 and both pick it up on their next run with nothing to configure. `PDFPIN_NO_SKILL=1 npm install -g .`
-skips it, `pdfpin skill` shows where it landed, `pdfpin skill install` adds or updates one
+skips it, and so does npm when it declines to run install scripts — in that case the first
+`pdfpin open` says so. `pdfpin skill` shows where it landed, `pdfpin skill install` adds or updates one
 (`--claude` or `--codex` for a single agent), and `pdfpin skill remove` takes it out again. A copy
 you edited yourself is never replaced without `--force`.
 

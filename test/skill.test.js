@@ -111,3 +111,23 @@ test('the skill is announced once, and only once there is something to announce'
   assert.match(notice, /Skill installed for Codex/);
   assert.equal(pendingNotice(pdfpinHome, home), null);
 });
+
+test('an agent left without the skill is told how to get it', () => {
+  // npm may warn about install scripts and one day refuse to run them; the hint is the way back
+  const home = tmpHome();
+  const pdfpinHome = path.join(home, '.pdfpin');
+  fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
+  fs.mkdirSync(path.join(home, '.codex'), { recursive: true });
+
+  const notice = pendingNotice(pdfpinHome, home);
+  assert.match(notice, /Claude Code and Codex are on this machine/);
+  assert.match(notice, /pdfpin skill install/);
+  assert.equal(pendingNotice(pdfpinHome, home), null, 'said once is enough');
+});
+
+test('a machine with no agent at all is told nothing', () => {
+  const home = tmpHome();
+  const pdfpinHome = path.join(home, '.pdfpin');
+  assert.equal(pendingNotice(pdfpinHome, home), null);
+  assert.equal(fs.existsSync(path.join(pdfpinHome, '.skill-notice')), false);
+});
