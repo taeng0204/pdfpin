@@ -50,8 +50,6 @@ pdfpin status · pdfpin stop
 - Search in the document (`⌘/Ctrl+F`), zoom (`⌘/Ctrl +/−/0`, ctrl+wheel), fit width / fit page.
 - Select text on a page → floating toolbar → highlight in a colour, optionally with a note.
 - Light / dark theme (`d`) or follow the system, dimmed pages in dark mode, hide highlights (`h`).
-  The theme switches instantly: the page bitmaps are dimmed with a canvas filter that cannot fade
-  cheaply, so fading the surfaces around them only made the gutter lag behind the pages.
 - Pages render, load their fonts and build their text layers only near the viewport, so a long PDF
   opens as fast as a short one. Search runs on the page index rather than on the DOM.
 - `←` / `→` turn one page; `n` / `p` step through highlights.

@@ -26,6 +26,7 @@ export const DEFAULT_KEYS = {
 
 export const DEFAULT_SETTINGS = Object.freeze({
   language: 'auto',
+  onboarded: false,
   colorBy: 'tag',
   theme: 'system',
   dimPages: true,
@@ -47,6 +48,10 @@ export function mergeSettings(current, patch) {
       case 'language':
         if (!LANGUAGES.includes(v)) throw new SettingsError(`language must be one of: ${LANGUAGES.join(', ')}`);
         next.language = v;
+        break;
+      case 'onboarded':
+        if (typeof v !== 'boolean') throw new SettingsError('onboarded must be true or false');
+        next.onboarded = v;
         break;
       case 'colorBy':
         if (!COLOR_BY.includes(v)) throw new SettingsError(`colorBy must be one of: ${COLOR_BY.join(', ')}`);

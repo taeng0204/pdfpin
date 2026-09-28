@@ -348,3 +348,23 @@ test('the open dialog is skipped under PDFPIN_NO_LAUNCH and reports it', async (
   assert.equal(r.json.doc, undefined);
   assert.equal(r.json.unavailable, undefined);
 });
+
+test('the demo document is built on request and reports whether the tour has run', async () => {
+  assert.equal((await api('GET', '/api/settings')).json.settings.onboarded, false);
+  const r = await api('POST', '/api/demo');
+  assert.equal(r.status, 200, r.text);
+  assert.match(r.json.doc.path, /warm-starts\.pdf$/);
+  assert.equal(r.json.doc.pages, 1);
+  assert.deepEqual(r.json.doc.annotations, []);
+  assert.deepEqual(r.json.doc.sessions, []);
+  assert.ok(Array.isArray(r.json.quotes) && r.json.quotes.length >= 4);
+
+  // running it again starts from a clean sheet rather than stacking a second tour
+  await api('POST', `/api/docs/${r.json.doc.id}/sessions`, { title: 'leftover', highlights: [{ text: r.json.quotes[0] }] });
+  const again = await api('POST', '/api/demo');
+  assert.equal(again.json.doc.id, r.json.doc.id);
+  assert.deepEqual(again.json.doc.sessions, []);
+  assert.deepEqual(again.json.doc.annotations, []);
+
+  assert.equal((await api('PATCH', '/api/settings', { onboarded: true })).json.settings.onboarded, true);
+});

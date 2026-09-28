@@ -119,6 +119,15 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   const touchesColors = (body) => ['colorBy', 'palette'].some((k) => body && k in body);
   route('PATCH', '/api/settings', ({ body }) => saveSettings(() => settings.update(body || {}), touchesColors(body)));
   route('DELETE', '/api/settings', () => saveSettings(() => settings.reset(), true));
+  // The guided tour runs against the real API, so it needs a real document of its own.
+  route('POST', '/api/demo', async () => {
+    const { buildDemoPdf, DEMO_QUOTES } = await import('./demo.js');
+    const file = await buildDemoPdf(path.join(home, 'demo'));
+    const doc = await docs.open(file);
+    docs.clear(doc);                                   // start every tour from a clean sheet
+    for (const s of [...store.get(doc.id).sessions]) docs.removeSession(doc, s.id);
+    return { doc: withUrls(store.get(doc.id)), quotes: DEMO_QUOTES };
+  });
   route('POST', '/api/open-dialog', async () => {
     const { pickPdf } = await import('./filedialog.js');
     const picked = await pickPdf();
