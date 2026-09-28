@@ -15,6 +15,12 @@ export class CliError extends Error {
   }
 }
 
+/** Whether two paths name the same directory, following symlinks when they exist. */
+function samePath(a, b) {
+  const real = (p) => { try { return fs.realpathSync(p); } catch { return path.resolve(p); } };
+  return real(a) === real(b);
+}
+
 export function readServerInfo(home = defaultHome()) {
   try { return JSON.parse(fs.readFileSync(serverInfoPath(home), 'utf8')); } catch { return null; }
 }
@@ -27,7 +33,8 @@ export async function healthy(port, timeoutMs = 900, home = null) {
     const j = await r.json();
     if (j?.ok !== true) return null;
     // A stale record can point at someone else's daemon; talking to it would edit the wrong store.
-    if (home && j.home && path.resolve(j.home) !== path.resolve(home)) return null;
+    // Compare the directories themselves, so the same folder reached through a symlink still counts.
+    if (home && j.home && samePath(j.home, home) === false) return null;
     return j;
   } catch {
     return null;

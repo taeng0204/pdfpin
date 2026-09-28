@@ -139,3 +139,21 @@ test('the CLI ignores a recorded port that belongs to a different home', async (
     await other.close();
   }
 });
+
+test('a home reached through a symlink is still recognised as the same home', async () => {
+  const { createServer } = await import('../src/server/index.js');
+  const real = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfpin-real-'));
+  const link = path.join(os.tmpdir(), `pdfpin-link-${Date.now()}`);
+  fs.symlinkSync(real, link);
+  const server = await createServer({ home: real, port: 0 });
+  fs.writeFileSync(path.join(real, 'server.json'), JSON.stringify({ port: server.port, pid: process.pid, url: `http://127.0.0.1:${server.port}` }));
+  try {
+    const { ensureDaemon } = await import('../src/cli/client.js');
+    const found = await ensureDaemon({ home: link, start: false });
+    assert.ok(found, 'the same directory by another name is still ours');
+    assert.equal(found.port, server.port);
+  } finally {
+    await server.close();
+    fs.unlinkSync(link);
+  }
+});
