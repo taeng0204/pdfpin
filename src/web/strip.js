@@ -1,5 +1,6 @@
 // Evidence strip: a slim minimap of highlight positions along the right edge of the viewer.
 import { state, on, select, orderedAnnotations } from './state.js';
+import { ellipsis } from './text.js';
 
 export function initStrip({ viewer }) {
   const strip = document.getElementById('strip');
@@ -21,7 +22,7 @@ export function initStrip({ viewer }) {
       const el = document.createElement('div');
       el.className = `strip-mark hl-color-${a.color}${a.id === state.selectedId ? ' selected' : ''}`;
       el.style.top = `${Math.min(H - 3, (y / total) * H)}px`;
-      el.title = `p.${a.page} — ${(a.title || a.note || a.quote || '').slice(0, 80)}`;
+      el.title = `p.${a.page} — ${ellipsis(a.title || a.note || a.quote || '', 80)}`;
       el.dataset.id = a.id;
       strip.appendChild(el);
       marks.set(a.id, el);

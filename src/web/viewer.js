@@ -3,6 +3,7 @@
 import { textItems, buildPageText } from '/shared/pagetext.js';
 import { state, emit } from './state.js';
 import { t } from './i18n.js';
+import { ellipsis } from './text.js';
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
 const GAP = 22;
@@ -181,7 +182,7 @@ function showRenderFailure(v, ps, err) {
   box.className = 'page-error';
   box.innerHTML = '<p></p><button class="btn"></button><p class="why"></p>';
   box.querySelector('p').textContent = t('page.failed');
-  box.querySelector('.why').textContent = err?.message ? String(err.message).slice(0, 120) : '';
+  box.querySelector('.why').textContent = err?.message ? ellipsis(err.message, 120) : '';
   const retry = box.querySelector('button');
   retry.textContent = t('page.retry');
   retry.onclick = () => { clearRenderFailure(ps); ps.rendered = 0; ps.rendering = null; renderCanvas(v, ps); };

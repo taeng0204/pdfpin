@@ -17,6 +17,7 @@ import { formatBinding } from './shortcuts.js';
 import { connectEvents } from './sse.js';
 import { toast } from './toast.js';
 import { icons } from './icons.js';
+import { ellipsis } from './text.js';
 
 const $ = (id) => document.getElementById(id);
 const darkQuery = matchMedia('(prefers-color-scheme: dark)');
@@ -237,7 +238,7 @@ async function boot() {
     const where = pages.length > 4 ? `p.${pages[0]}–${pages[pages.length - 1]}` : pages.map((p) => `p.${p}`).join(', ');
     const s = list[0].sessionId ? state.sessions.find((x) => x.id === list[0].sessionId) : null;
     const label = list.length === 1 ? t('toast.newHighlight', { where }) : t('toast.newHighlights', { n: list.length, where });
-    toast(`${label}${s?.title ? ` · ${s.title.slice(0, 40)}` : ''}`, { color: list[0].color, action: t('toast.show'), onAction: () => select(list[0].id, { from: 'toast' }) });
+    toast(`${label}${s?.title ? ` · ${ellipsis(s.title, 40)}` : ''}`, { color: list[0].color, action: t('toast.show'), onAction: () => select(list[0].id, { from: 'toast' }) });
   };
   const daemonPid = (await api('GET', '/api/health').catch(() => ({}))).pid;
   const resync = async () => {
