@@ -37,6 +37,12 @@ export class SseHub {
     return n;
   }
 
+  totalClients() {
+    let n = 0;
+    for (const set of this.clients.values()) n += set.size;
+    return n;
+  }
+
   clientCount(docId) {
     return this.clients.get(docId)?.size ?? 0;
   }

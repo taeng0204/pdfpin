@@ -24,6 +24,7 @@ export function initKeys({ viewer, search, ui }) {
   }
 
   const actions = {
+    openDocument: () => ui.openDocument(),
     documents: () => ui.toggleDocuments(),
     history: () => ui.toggleHistory(),
     settings: () => ui.openSettings(),

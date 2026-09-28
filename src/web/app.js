@@ -56,6 +56,7 @@ function applyStrings() {
   set('history-toggle', 'title', t('top.documents', { key: keyFor('documents') }));
   set('panel-toggle', 'title', t('top.history', { key: keyFor('history') }));
   set('drawer-close', 'title', t('top.close'));
+  set('open-doc-btn', 'title', t('docs.open', { key: keyFor('openDocument') }));
   set('export-btn', 'title', t('panel.export'));
   set('tags-btn', 'title', t('tags.manage'));
   set('archive-btn', 'title', t('archive.manage'));
@@ -152,6 +153,7 @@ async function boot() {
     }
   };
   const ui = {
+    openDocument() { documents.pickAndOpen(); },
     toggleDocuments() { documents.isOpen() ? documents.close() : documents.open(); },
     toggleHistory() { state.panelOpen = !state.panelOpen; savePref('panel', state.panelOpen); applyPanel(); },
     toggleTheme() { saveSettings({ theme: state.theme === 'dark' ? 'light' : 'dark' }); },
@@ -263,7 +265,10 @@ async function boot() {
     },
     'doc.reloaded': () => { toast(t('docs.reloading'), { duration: 1500 }); setTimeout(() => location.reload(), 600); },
     'doc.removed': () => { toast(t('docs.removed'), { duration: 2500 }); setTimeout(() => { location.href = '/'; }, 800); },
-    'docs.changed': () => { if (documents.isOpen()) documents.refresh(); },
+    'docs.changed': ({ id, action }) => {
+      if (action === 'opened' && id && id !== state.docId) { location.href = `/view/${id}`; return; }
+      if (documents.isOpen()) documents.refresh();
+    },
     'settings.changed': ({ settings }) => { state.settings = settings; applySettings(); },
     resync,
   }, (s) => { const c = $('conn'); c.dataset.state = s; c.title = t(`conn.${s}`); });

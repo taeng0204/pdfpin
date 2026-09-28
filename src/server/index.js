@@ -119,6 +119,13 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   const touchesColors = (body) => ['colorBy', 'palette'].some((k) => body && k in body);
   route('PATCH', '/api/settings', ({ body }) => saveSettings(() => settings.update(body || {}), touchesColors(body)));
   route('DELETE', '/api/settings', () => saveSettings(() => settings.reset(), true));
+  route('POST', '/api/open-dialog', async () => {
+    const { pickPdf } = await import('./filedialog.js');
+    const picked = await pickPdf();
+    if (!picked.path) return picked;
+    const doc = await docs.open(picked.path);
+    return { doc: withUrls(doc) };
+  });
   route('GET', '/api/docs', () => ({ docs: store.list() }));
   route('POST', '/api/docs', async ({ body }) => {
     if (!body?.path) throw new ApiError(400, '"path" is required');
@@ -179,7 +186,7 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   route('POST', '/api/shutdown', () => { setTimeout(() => { handle.close().then(() => onShutdown?.()); }, 50); return { ok: true }; });
 
   function withUrls(doc) {
-    return { ...doc, viewerUrl: `/view/${doc.id}`, fileUrl: `/api/docs/${doc.id}/file`, viewers: hub.clientCount(doc.id) };
+    return { ...doc, viewerUrl: `/view/${doc.id}`, fileUrl: `/api/docs/${doc.id}/file`, viewers: hub.clientCount(doc.id), viewersAnywhere: hub.totalClients() };
   }
 
   const server = http.createServer(async (req, res) => {

@@ -6,7 +6,7 @@ import { icons } from './icons.js';
 import { eventBinding, formatBinding, isReserved, IS_MAC } from './shortcuts.js';
 import { toast } from './toast.js';
 
-const ACTIONS = ['documents', 'history', 'settings', 'search', 'nextPage', 'prevPage', 'nextHighlight', 'prevHighlight', 'zoomIn', 'zoomOut', 'zoomReset', 'theme', 'toggleHighlights'];
+const ACTIONS = ['openDocument', 'documents', 'history', 'settings', 'search', 'nextPage', 'prevPage', 'nextHighlight', 'prevHighlight', 'zoomIn', 'zoomOut', 'zoomReset', 'theme', 'toggleHighlights'];
 
 export function openSettings() {
   const existing = document.querySelector('.settings-root');

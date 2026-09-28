@@ -60,6 +60,11 @@ pdfpin status · pdfpin stop
 - History panel at `⌘J` / `Ctrl+J` and Documents drawer at `⌘D` / `Ctrl+D`, both rebindable.
 - Documents drawer (`⌘D`, `l`, or the library button): every PDF opened so far with its note count, tags and
   latest session; click one to open it instantly (it also becomes the CLI's current document).
+- Open a PDF without leaving the viewer: the folder button in that drawer, or `o`. The daemon shows your
+  system's own file chooser, so the PDF stays where it is and keeps its real path. macOS Chrome keeps `⌘O`
+  and `⌘N` for its own File menu, so those never reach the page; rebind `o` in settings if you prefer.
+- An open window follows along: run `pdfpin open other.pdf` in a terminal and the window you already have
+  switches to it rather than piling up another one.
 - Twelve highlight colours. Colour follows the tag by default, or the session if you prefer one colour
   per question (`⌘,` → Colour highlights by). Click the dot beside a group to repaint that tag or session;
   a colour the agent asked for by name is never repainted.

@@ -34,7 +34,7 @@ RULES OF THUMB
   • One question → one session. Start a new session for a new question instead of clearing old ones.
 
 COMMANDS
-  open <file.pdf> [--no-browser] [--in-browser]  open a PDF (auto-starts the daemon; app window or default browser)
+  open <file.pdf> [--no-browser] [--in-browser]  open a PDF (auto-starts the daemon; an open window follows it)
   text [-p 1-3,7] [--json]                       page text with "=== Page N ===" markers
   find <query> [-p N] [--json]                   locate a phrase: page, score, context
   mark --json '{title, flow, highlights:[…]}' | --from f.json | --stdin   session + highlights in one call

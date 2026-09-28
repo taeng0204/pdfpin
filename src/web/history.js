@@ -14,6 +14,9 @@ export function initHistory() {
   const filter = document.getElementById('history-filter');
   const toggle = document.getElementById('history-toggle');
   toggle.innerHTML = icons.library;
+  const openBtn = document.getElementById('open-doc-btn');
+  openBtn.innerHTML = icons.open;
+  openBtn.onclick = () => pickAndOpen();
   document.getElementById('drawer-close').innerHTML = icons.close;
   let docs = [];
   let query = '';
@@ -31,6 +34,21 @@ export function initHistory() {
     toggle.setAttribute('aria-pressed', 'false');
   }
   const isOpen = () => !drawer.hidden;
+
+  /** Hand the choosing to the daemon: only it can learn a real path on this machine. */
+  async function pickAndOpen() {
+    const dismiss = toast(t('docs.opening'), { duration: 60000 });
+    try {
+      const r = await historyApi.openDialog();
+      dismiss();
+      if (r.unavailable) { toast(t('docs.openUnavailable'), { duration: 9000, error: true }); return; }
+      if (r.cancelled) return;
+      location.href = `/view/${r.doc.id}`;
+    } catch (e) {
+      dismiss();
+      toast(t('docs.openFailed', { message: e.message }), { error: true });
+    }
+  }
 
   async function refresh() {
     try {
@@ -151,7 +169,7 @@ export function initHistory() {
   document.getElementById('drawer-close').onclick = close;
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isOpen()) close(); });
 
-  return { open, close, isOpen, refresh };
+  return { open, close, isOpen, refresh, pickAndOpen };
 }
 
 /** Keep the tail of a long path: "…/lecture/binary/paper.pdf". */

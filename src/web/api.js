@@ -18,6 +18,7 @@ export async function api(method, url, body) {
 
 export const historyApi = {
   list: () => api('GET', '/api/docs'),
+  openDialog: () => api('POST', '/api/open-dialog'),
   activate: (id) => api('POST', `/api/docs/${id}/activate`),
   remove: (id) => api('DELETE', `/api/docs/${id}`),
   reveal: (id) => api('POST', `/api/docs/${id}/reveal`),

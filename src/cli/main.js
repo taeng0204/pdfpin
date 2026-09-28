@@ -73,8 +73,9 @@ program
     const { doc } = await c.call('POST', '/api/docs', { path: abs });
     const url = `${c.base}${doc.viewerUrl}`;
     let launched = 'not launched';
+    // An open window follows the document you just opened, so only launch one when none is live.
     if (opts.browser !== false) {
-      launched = doc.viewers > 0 ? 'already open' : openViewer(url, { mode: opts.inBrowser ? 'browser' : undefined, home });
+      launched = doc.viewers > 0 || doc.viewersAnywhere > 0 ? 'already open' : openViewer(url, { mode: opts.inBrowser ? 'browser' : undefined, home });
     }
     if (opts.json) return json({ ...doc, url, launched });
     out(`Opened "${doc.title}" (${doc.pages} pages, ${doc.annotations.length} annotations) · id ${doc.id}`);

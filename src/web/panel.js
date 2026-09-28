@@ -64,8 +64,7 @@ export function initPanel({ docApi, viewer, highlights }) {
     countEl.textContent = t('panel.count', { n: ns, m: visible.length === all ? all : `${visible.length}/${all}` });
     cardsEl.innerHTML = '';
     if (!all && !state.sessions.length) {
-      cardsEl.innerHTML = `<div class="empty"><div class="glyph">${icons.pin}</div><strong>${t('panel.empty')}</strong>${t('panel.emptyHint')}<code>pdfpin mark --json '{"title": "…",\n  "flow": "…", "highlights": [{"text": "…", "note": "…"}]}'</code></div>`;
-      cardsEl.querySelector('.glyph svg').style.cssText = 'width:34px;height:34px;stroke:currentColor;fill:none;stroke-width:1.5';
+      cardsEl.innerHTML = `<div class="empty"><strong>${t('panel.empty')}</strong>${t('panel.emptyHint')}</div>`;
       return;
     }
     const q = state.filter.text.trim().toLowerCase();

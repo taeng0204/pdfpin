@@ -340,3 +340,11 @@ test('the palette offers twelve named colours and rejects anything else', async 
   assert.equal(bad.status, 400);
   assert.match(bad.json.error, /chartreuse/);
 });
+
+test('the open dialog is skipped under PDFPIN_NO_LAUNCH and reports it', async () => {
+  const r = await api('POST', '/api/open-dialog');
+  assert.equal(r.status, 200);
+  assert.equal(r.json.cancelled, true);
+  assert.equal(r.json.doc, undefined);
+  assert.equal(r.json.unavailable, undefined);
+});

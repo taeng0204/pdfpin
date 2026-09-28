@@ -8,6 +8,7 @@ export const COLOR_BY = ['tag', 'session'];
 export const THEMES = ['system', 'light', 'dark'];
 
 export const DEFAULT_KEYS = {
+  openDocument: 'o',
   documents: 'mod+d',
   history: 'mod+j',
   settings: 'mod+,',
