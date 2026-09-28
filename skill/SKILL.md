@@ -52,7 +52,9 @@ passages with short notes; the human sees them live in the viewer's side panel.
 - `flow` is the reader's overview: 2–5 sentences, refer to highlights by number (1), (2) or by tag. Notes: one or
   two sentences on *why* the passage matters. Markdown subset (`**bold**`, `*italic*`, `` `code` ``, `- lists`, links).
 - One question → one session. Do not clear old sessions; the reader keeps them as history.
-- Colours: yellow (default), green, blue, pink, purple, orange. Keep one colour per tag within a session.
+- **Colour follows the tag** and you normally leave it out: a tag keeps one colour across the document and a
+  new tag takes the next free one (yellow, green, blue, pink, purple, orange). Set `"color"` only to override.
+  So give every highlight a `tag` — that is what makes the colours mean something to the reader.
 - `pdfpin list` shows sessions and highlights; `pdfpin export` writes `<name>.annotated.pdf` with real PDF
   highlight annotations; `--format md` writes a Markdown report grouped by session.
 - Every command accepts `-d <id|path|file name>` to target a document that is not the current one.

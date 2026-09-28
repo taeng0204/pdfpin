@@ -306,3 +306,23 @@ test('reveal is refused for unknown documents and skipped under PDFPIN_NO_LAUNCH
   assert.equal(r.status, 200);
   assert.equal(r.json.launched, false);
 });
+
+test('colour follows the tag: same tag keeps its colour, new tags take the next one', async () => {
+  const fresh = await api('POST', '/api/docs', { path: pdfPath });
+  const id = fresh.json.doc.id;
+  await api('DELETE', `/api/docs/${id}/annotations`);
+  const add = (text, tag, color) => api('POST', `/api/docs/${id}/annotations`, { text, tag, color, note: '' });
+
+  const a = await add('Hello World', 'coverage');
+  const b = await add('Second line', 'bugs');
+  const c = await add('Eclipser achieved', 'coverage');
+  assert.equal(a.json.annotation.color, 'yellow');       // first tag gets the first palette colour
+  assert.notEqual(b.json.annotation.color, 'yellow');    // a different tag gets a different one
+  assert.equal(c.json.annotation.color, a.json.annotation.color); // same tag, same colour
+
+  const explicit = await add('higher code coverage', 'coverage', 'purple');
+  assert.equal(explicit.json.annotation.color, 'purple'); // an explicit colour always wins
+
+  const untagged = await api('POST', `/api/docs/${id}/annotations`, { text: 'Page two', note: '' });
+  assert.equal(untagged.json.annotation.color, 'yellow'); // no tag, no rule: the default
+});

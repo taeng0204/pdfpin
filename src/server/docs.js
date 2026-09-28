@@ -151,6 +151,21 @@ export class DocManager {
     return spec.sessionId;
   }
 
+  /**
+   * The colour of a highlight. An explicit colour always wins; otherwise a tag keeps the colour it
+   * already has in this document, and a new tag takes the next unused one from the palette.
+   */
+  _colorFor(doc, spec) {
+    if (spec.color) return spec.color;
+    const tag = (spec.tag ?? '').trim();
+    if (!tag) return 'yellow';
+    const anns = this.store.get(doc.id)?.annotations ?? [];
+    const same = anns.find((a) => a.tag === tag && a.color);
+    if (same) return same.color;
+    const taken = new Set(anns.filter((a) => a.tag).map((a) => a.color));
+    return COLORS.find((c) => !taken.has(c)) ?? COLORS[taken.size % COLORS.length];
+  }
+
   _validateCommon(spec) {
     if (spec.color !== undefined && spec.color !== null && !COLORS.includes(spec.color)) {
       throw new ApiError(400, `Unknown color "${spec.color}". Use one of: ${COLORS.join(', ')}`);
@@ -179,10 +194,11 @@ export class DocManager {
     }
     const pdf = await this.pdf(doc);
     const sessionId = this._sessionFor(doc, spec);
+    const color = this._colorFor(doc, spec);
     const create = async (h) => {
       const idx = await getPageIndex(pdf, h.page);
       const ann = this.store.addAnnotation(doc.id, {
-        page: h.page, quote: h.quote, note: spec.note ?? '', title: spec.title ?? '', color: spec.color ?? 'yellow', tag: spec.tag ?? '',
+        page: h.page, quote: h.quote, note: spec.note ?? '', title: spec.title ?? '', color, tag: spec.tag ?? '',
         anchor: h.anchor, rects: approxRects(idx, h.anchor), rectsSource: 'approx', score: h.score, source: spec.source === 'user' ? 'user' : 'agent', sessionId,
       });
       this.hub.broadcast(doc.id, 'annotation.added', { annotation: ann });
@@ -212,7 +228,7 @@ export class DocManager {
     // people highlighting by hand are not part of an agent session unless they say so
     const sessionId = this._sessionFor(doc, { ...spec, sessionId: spec.sessionId === undefined ? null : spec.sessionId });
     const ann = this.store.addAnnotation(doc.id, {
-      page, quote: spec.quote ?? collapse(idx.text.slice(start, end)), note: spec.note ?? '', title: spec.title ?? '', color: spec.color ?? 'yellow', tag: spec.tag ?? '',
+      page, quote: spec.quote ?? collapse(idx.text.slice(start, end)), note: spec.note ?? '', title: spec.title ?? '', color: this._colorFor(doc, spec), tag: spec.tag ?? '',
       anchor: a, rects: rects ?? approxRects(idx, a), rectsSource: rects ? 'dom' : 'approx', score: 1, source: spec.source ?? 'user', sessionId,
     });
     this.hub.broadcast(doc.id, 'annotation.added', { annotation: ann });
@@ -226,7 +242,7 @@ export class DocManager {
     const rects = cleanRects(spec.rects);
     const sessionId = this._sessionFor(doc, spec);
     const ann = this.store.addAnnotation(doc.id, {
-      page, quote: spec.quote ?? '', note: spec.note ?? '', title: spec.title ?? '', color: spec.color ?? 'yellow', tag: spec.tag ?? '',
+      page, quote: spec.quote ?? '', note: spec.note ?? '', title: spec.title ?? '', color: this._colorFor(doc, spec), tag: spec.tag ?? '',
       anchor: null, rects, rectsSource: 'dom', score: 1, source: spec.source ?? 'agent', sessionId,
     });
     this.hub.broadcast(doc.id, 'annotation.added', { annotation: ann });

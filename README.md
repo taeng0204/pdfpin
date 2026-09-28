@@ -24,7 +24,7 @@ For Claude Code, copy `skill/SKILL.md` to `~/.claude/skills/pdfpin/SKILL.md` (or
 ```bash
 pdfpin open paper.pdf                       # starts the daemon, opens the viewer window
 pdfpin text -p 1-3                          # read page text (find exact quotes here)
-pdfpin mark --json '{"title":"Evidence for X","flow":"Two passages: (1) … (2) …","highlights":[{"text":"…","note":"…","color":"green","tag":"coverage"}]}'
+pdfpin mark --json '{"title":"Evidence for X","flow":"Two passages: (1) … (2) …","highlights":[{"text":"…","note":"…","tag":"coverage"}]}'
 pdfpin add --text "exact quote" --note "why it matters" --tag claim-1 --color green   # attaches to the latest session
 pdfpin session start --title "…" · session update --flow "…" · session list · session rm <id>
 pdfpin list · pdfpin rm <id> · pdfpin clear --tag claim-1

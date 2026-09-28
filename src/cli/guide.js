@@ -27,8 +27,9 @@ RULES OF THUMB
   • Exit code 2 = something was not found; the output lists up to three nearby candidates. Retry with one.
   • Prefer --page when the same phrase occurs several times; --all highlights every occurrence.
   • Notes render a small Markdown subset (**bold**, *italic*, \`code\`, lists, links, line breaks). Keep them short.
-  • Use a consistent colour per tag inside a session; refer to highlights from the flow by tag or by number (1), (2)…
-  • --color: yellow (default), green, blue, pink, purple, orange.
+  • Colour follows the tag on its own: a tag keeps one colour across the document, and a new tag takes the
+    next free one from yellow, green, blue, pink, purple, orange. Pass --color only to override it.
+  • Refer to highlights from the flow by tag or by number (1), (2)…
   • One question → one session. Start a new session for a new question instead of clearing old ones.
 
 COMMANDS

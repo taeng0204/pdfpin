@@ -118,10 +118,16 @@ export function initHighlights(viewer, docApi) {
   });
   viewer.pagesEl.addEventListener('click', (e) => {
     const rect = e.target.closest?.('.hl-rect');
-    if (!rect) { if (pinnedId) hidePopover(); return; }
+    if (!rect) {
+      if (pinnedId) hidePopover();
+      // clicking away drops the selection, so no highlight stays emphasised for good
+      if (state.selectedId && window.getSelection()?.isCollapsed !== false) select(null, { from: 'page' });
+      return;
+    }
     const id = rect.parentElement.dataset.id;
     const a = state.annotations.get(id);
     if (!a) return;
+    if (state.selectedId === id && pinnedId === id) { hidePopover(); select(null, { from: 'page' }); return; }
     pinnedId = id;
     showPopover(a, rect.getBoundingClientRect(), { pinned: true });
     select(id, { from: 'page' });
