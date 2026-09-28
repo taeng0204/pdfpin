@@ -1,4 +1,4 @@
-<img src="docs/images/logo.png" alt="pdfpin" width="180">
+<img src="https://raw.githubusercontent.com/taeng0204/pdfpin/main/docs/images/logo.png" alt="pdfpin" width="180">
 
 Read a paper with an AI agent sitting next to you.
 
@@ -6,7 +6,7 @@ You ask a question. The agent reads the PDF, marks the passages that answer it, 
 note on each one. You read the marks in the paper itself, not in a chat window that has lost sight
 of the page.
 
-![The viewer: a paper on the left, the agent's answer on the right](docs/images/viewer-light.png)
+![The viewer: a paper on the left, the agent's answer on the right](https://raw.githubusercontent.com/taeng0204/pdfpin/main/docs/images/viewer-light.png)
 
 Nothing leaves your machine. The daemon listens on loopback only and your notes sit in plain JSON
 beside the path of the PDF they belong to.
@@ -16,12 +16,15 @@ beside the path of the PDF they belong to.
 Node 22.13 or newer, on macOS, Windows or Linux. No native build step.
 pdf.js 6 sets that floor; nothing else here needs it.
 
-Clone this repository, then:
+```bash
+npm install -g pdfpin
+pdfpin open paper.pdf
+```
+
+Or from a clone, which is also how you work on it:
 
 ```bash
-npm install
-npm install -g .
-pdfpin open paper.pdf
+npm install && npm install -g .
 ```
 
 A guided tour runs the first time. It writes a one-page demo paper, asks it two questions through
