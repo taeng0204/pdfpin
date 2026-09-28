@@ -72,10 +72,9 @@ button, input, textarea { font: inherit; color: inherit; }
 ::selection { background: rgba(37, 99, 235, 0.18); }
 :root[data-theme="dark"] ::selection { background: rgba(110, 168, 255, 0.3); }
 .app { display: grid; grid-template-rows: var(--topbar-h) 1fr; height: 100%; }
-:root.theme-shift, :root.theme-shift .topbar, :root.theme-shift .panel, :root.theme-shift .drawer,
-:root.theme-shift .viewer, :root.theme-shift body, :root.theme-shift .page, :root.theme-shift .card,
-:root.theme-shift .session, :root.theme-shift .dialog { transition: background-color 280ms ease, color 280ms ease, border-color 280ms ease; }
-:root.theme-shift .page canvas { transition: filter 280ms ease; }
+/* Only the chrome fades. Animating the page bitmaps would repaint every canvas on every frame. */
+:root.theme-shift body, :root.theme-shift .topbar, :root.theme-shift .panel, :root.theme-shift .drawer,
+:root.theme-shift .viewer { transition: background-color 170ms ease, color 170ms ease, border-color 170ms ease; }
 
 /* ---------- top bar ---------- */
 .topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 0 12px; background: var(--surface); border-bottom: 1px solid var(--line); z-index: 20; }

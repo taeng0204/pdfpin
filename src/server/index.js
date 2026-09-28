@@ -83,7 +83,8 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
 
   route('GET', '/api/health', () => ({ ok: true, version: VERSION, pid: process.pid, home }));
   route('GET', '/api/settings', () => ({ settings: settings.get() }));
-  route('PATCH', '/api/settings', ({ body }) => saveSettings(() => settings.update(body || {}), true));
+  const touchesColors = (body) => ['colorBy', 'palette'].some((k) => body && k in body);
+  route('PATCH', '/api/settings', ({ body }) => saveSettings(() => settings.update(body || {}), touchesColors(body)));
   route('DELETE', '/api/settings', () => saveSettings(() => settings.reset(), true));
   route('GET', '/api/docs', () => ({ docs: store.list() }));
   route('POST', '/api/docs', async ({ body }) => {

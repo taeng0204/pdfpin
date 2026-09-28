@@ -135,11 +135,18 @@ async function boot() {
   initStrip({ viewer });
 
   const documents = initHistory();
+  /** Apply locally, then persist. Waiting on the daemon first would make the theme feel laggy. */
   const saveSettings = async (patch) => {
+    const previous = state.settings;
+    state.settings = { ...state.settings, ...patch };
+    applySettings();
     try {
       state.settings = (await api('PATCH', '/api/settings', patch)).settings;
+    } catch (e) {
+      state.settings = previous;
       applySettings();
-    } catch (e) { toast(t('settings.saveFailed', { message: e.message }), { error: true }); }
+      toast(t('settings.saveFailed', { message: e.message }), { error: true });
+    }
   };
   const ui = {
     toggleDocuments() { documents.isOpen() ? documents.close() : documents.open(); },
@@ -149,12 +156,16 @@ async function boot() {
     openSettings,
   };
   let themeShiftTimer = null;
+  let applied = null;
   function applySettings() {
     const before = state.theme;
-    setLanguage(state.settings?.language);
+    const s = state.settings;
+    const listChanged = !applied || applied.language !== s?.language || applied.colorBy !== s?.colorBy;
+    applied = s ? { language: s.language, colorBy: s.colorBy } : null;
+    setLanguage(s?.language);
     applyTheme();
     applyStrings();
-    panel.renderAll();
+    if (listChanged) panel.renderAll();
     // Fade the colours rather than snapping to them. A class, not a page snapshot, so long PDFs stay smooth.
     if (state.theme !== before && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       root.classList.add('theme-shift');
