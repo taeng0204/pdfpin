@@ -1,6 +1,11 @@
 // Viewer strings. `t(key, vars)` interpolates {name} and picks a plural form via {n}.
 const EN = {
   'app.loading': 'Opening document…',
+  'welcome.title': 'Nothing open yet',
+  'welcome.step1': 'Open a PDF from this computer. The file stays where it is; pdfpin only remembers where to find it.',
+  'welcome.open': 'Open a PDF…',
+  'welcome.step2': 'Or install the pdfpin skill, then ask your AI agent to open a paper and mark the evidence for you.',
+  'welcome.cli': 'From a terminal: {cmd}',
   'app.noDocument': 'No document is open. Pick one from the history, or run `pdfpin open <file.pdf>` in a terminal.',
   'app.loadFailed': 'Cannot load document: {message}',
   'app.failed': 'Failed: {message}',
@@ -113,7 +118,7 @@ const EN = {
   'docs.heading': 'Documents',
   'docs.filter': 'Filter documents…',
   'docs.foot': 'Open another PDF from a terminal: <code>pdfpin open file.pdf</code>',
-  'docs.empty': 'No documents yet.<br>Open one with <code>pdfpin open file.pdf</code>.',
+  'docs.empty': 'No documents yet.<br>Use the folder button above, or <code>pdfpin open file.pdf</code>.',
   'docs.noMatch': 'Nothing matches.',
   'docs.loadFailed': 'Cannot load history: {message}',
   'docs.pages': '{n} pages',
@@ -211,6 +216,11 @@ const EN = {
 
 const KO = {
   'app.loading': '문서를 여는 중…',
+  'welcome.title': '아직 연 문서가 없습니다',
+  'welcome.step1': '이 컴퓨터의 PDF를 여세요. 파일은 있던 자리에 그대로 두고 위치만 기억합니다.',
+  'welcome.open': 'PDF 열기…',
+  'welcome.step2': '또는 pdfpin 스킬을 설치한 뒤, AI 에이전트에게 논문을 열고 근거를 표시해 달라고 하세요.',
+  'welcome.cli': '터미널에서는 {cmd}',
   'app.noDocument': '열린 문서가 없습니다. 히스토리에서 고르거나 터미널에서 `pdfpin open <파일.pdf>`를 실행하세요.',
   'app.loadFailed': '문서를 불러올 수 없습니다: {message}',
   'app.failed': '실패: {message}',
@@ -323,7 +333,7 @@ const KO = {
   'docs.heading': '문서',
   'docs.filter': '문서 검색…',
   'docs.foot': '터미널에서 다른 PDF 열기: <code>pdfpin open file.pdf</code>',
-  'docs.empty': '아직 문서가 없습니다.<br><code>pdfpin open file.pdf</code>로 열어보세요.',
+  'docs.empty': '아직 문서가 없습니다.<br>위의 폴더 버튼을 누르거나 <code>pdfpin open file.pdf</code>로 여세요.',
   'docs.noMatch': '일치하는 문서가 없습니다.',
   'docs.loadFailed': '목록을 불러올 수 없습니다: {message}',
   'docs.pages': '{n}쪽',

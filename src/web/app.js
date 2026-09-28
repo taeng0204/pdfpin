@@ -39,7 +39,13 @@ darkQuery.addEventListener('change', () => { if ((state.settings?.theme ?? 'syst
 function applyStrings() {
   const set = (id, attr, value) => { const el = $(id); if (el) el[attr] = value; };
   document.title = state.doc ? `${state.doc.title} · pdfpin` : 'pdfpin';
-  set('loading-text', 'textContent', $('loading').hidden ? '' : t('app.loading'));
+  if (!$('loading').hidden) set('loading-text', 'textContent', t('app.loading'));
+  set('welcome-title', 'textContent', t('welcome.title'));
+  set('welcome-step1', 'textContent', t('welcome.step1'));
+  set('welcome-open', 'textContent', t('welcome.open'));
+  set('welcome-step2', 'textContent', t('welcome.step2'));
+  const cli = $('welcome-cli');
+  if (cli) cli.innerHTML = t('welcome.cli', { cmd: '<code>pdfpin open file.pdf</code>' });
   set('search-input', 'placeholder', t('top.searchPlaceholder'));
   set('filter-input', 'placeholder', t('panel.filter'));
   set('history-filter', 'placeholder', t('docs.filter'));
@@ -99,7 +105,6 @@ async function boot() {
     const r = m ? await api('GET', `/api/docs/${m[1]}`) : await api('GET', '/api/docs/current');
     doc = r.doc;
   } catch (e) {
-    $('loading-text').textContent = e.status === 404 ? t('app.noDocument') : t('app.loadFailed', { message: e.message });
     $('doc-title').textContent = 'pdfpin';
     applyTheme();
     applyPanel();
@@ -107,8 +112,18 @@ async function boot() {
     $('settings-toggle').innerHTML = icons.settings;
     $('settings-toggle').onclick = openSettings;
     const documents = initHistory();
-    applyStrings();
-    if (e.status === 404) documents.open();
+    $('loading').hidden = true;
+    if (e.status === 404) {
+      app.classList.add('no-doc');
+      $('welcome').hidden = false;
+      $('welcome-open').onclick = () => documents.pickAndOpen();
+      applyStrings();
+      documents.open();
+    } else {
+      $('loading').hidden = false;
+      $('loading-text').textContent = t('app.loadFailed', { message: e.message });
+      applyStrings();
+    }
     return;
   }
   if (!m) history.replaceState(null, '', `/view/${doc.id}`);
