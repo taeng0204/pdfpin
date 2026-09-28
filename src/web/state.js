@@ -45,6 +45,10 @@ export function dropSession(id) {
   emit('sessions');
 }
 export const sessionOf = (a) => (a.sessionId ? state.sessions.find((s) => s.id === a.sessionId) ?? null : null);
+/** An archived session is put away: its highlights leave the pages and the list, but nothing is lost. */
+export const isArchived = (a) => !!sessionOf(a)?.archived;
+export const archivedSessions = () => state.sessions.filter((s) => s.archived);
+export const liveSessions = () => state.sessions.filter((s) => !s.archived);
 export const hasFilter = () => !!(state.filter.text.trim() || state.filter.tags.size || state.filter.colors.size || state.filter.session);
 
 export function setAnnotations(list) {
@@ -72,12 +76,13 @@ export function visibleAnnotations() {
   const { text, tags, colors, session } = state.filter;
   const q = text.trim().toLowerCase();
   return [...state.annotations.values()]
+    .filter((a) => !isArchived(a))
     .filter((a) => !session || a.sessionId === session)
     .filter((a) => (!tags.size || tags.has(a.tag || '')) && (!colors.size || colors.has(a.color)))
     .filter((a) => !q || `${a.quote} ${a.note} ${a.title} ${a.tag}`.toLowerCase().includes(q))
     .sort(byPosition);
 }
-export function orderedAnnotations() { return [...state.annotations.values()].sort(byPosition); }
+export function orderedAnnotations() { return [...state.annotations.values()].filter((a) => !isArchived(a)).sort(byPosition); }
 export function byPosition(a, b) {
   if (a.page !== b.page) return a.page - b.page;
   const ay = a.rects?.[0]?.y ?? 0, by = b.rects?.[0]?.y ?? 0;

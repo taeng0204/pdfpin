@@ -31,6 +31,7 @@ export const docApi = (id) => ({
   export: (format, out) => api('POST', `/api/docs/${id}/export`, { format, out }),
   addSession: (spec) => api('POST', `/api/docs/${id}/sessions`, spec),
   updateSession: (sid, patch) => api('PATCH', `/api/docs/${id}/sessions/${sid}`, patch),
+  archiveSession: (sid, archived) => api('PATCH', `/api/docs/${id}/sessions/${sid}`, { archived }),
   removeSession: (sid) => api('DELETE', `/api/docs/${id}/sessions/${sid}`),
   setColors: (patch) => api('PATCH', `/api/docs/${id}/colors`, patch),
   tags: () => api('GET', `/api/docs/${id}/tags`),

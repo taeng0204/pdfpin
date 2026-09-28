@@ -1,6 +1,6 @@
 // Highlight overlay: anchors → exact DOM rects via Range, rendering, hover popover, selection pulse.
 import { mergeLineRects } from '/shared/pagetext.js';
-import { state, on, select, emit, visibleAnnotations, hasFilter } from './state.js';
+import { state, on, select, emit, visibleAnnotations, hasFilter, isArchived, orderedAnnotations } from './state.js';
 import { renderMarkdown } from './markdown.js';
 import { icons } from './icons.js';
 
@@ -36,6 +36,7 @@ export function initHighlights(viewer, docApi) {
   }
 
   async function render(a) {
+    if (isArchived(a)) { remove(a.id); return; }
     const ps = viewer.pages[a.page - 1];
     if (!ps) return;
     const rects = await rectsFor(a);
@@ -64,8 +65,27 @@ export function initHighlights(viewer, docApi) {
   async function renderAll() {
     for (const g of groups.values()) g.el.remove();
     groups.clear();
-    await Promise.all([...state.annotations.values()].map(render));
+    await Promise.all([...state.annotations.values()].filter((a) => !isArchived(a)).map(render));
     emit('rects');
+  }
+
+  /** Jump to a session's first highlight and light the whole session up once. */
+  async function flashSession(sessionId) {
+    const items = orderedAnnotations().filter((a) => a.sessionId === sessionId);
+    if (!items.length) return;
+    const first = items[0];
+    const rects = await rectsFor(first);
+    viewer.scrollToRect(first.page, rects[0] || null);
+    setTimeout(() => {
+      for (const a of items) {
+        const g = groups.get(a.id);
+        if (!g) continue;
+        g.el.classList.remove('flash');
+        void g.el.offsetWidth;
+        g.el.classList.add('flash');
+        setTimeout(() => g.el.classList.remove('flash'), 1000);
+      }
+    }, 320);
   }
 
   function pulse(id) {
@@ -143,7 +163,7 @@ export function initHighlights(viewer, docApi) {
     for (const [gid, g] of groups) g.el.classList.toggle('faded', !!keep && !keep.has(gid));
   }
   on('filter', applyFilter);
-  on('sessions', applyFilter);
+  on('sessions', () => { renderAll(); });
   on('annotations', () => setTimeout(applyFilter, 0));
   on('select', ({ id }) => {
     for (const [gid, g] of groups) g.el.classList.toggle('selected', gid === id);
@@ -174,7 +194,7 @@ export function initHighlights(viewer, docApi) {
   }
   function clearSearchHits() { for (const d of searchEls) d.remove(); searchEls.length = 0; }
 
-  return { render, remove, renderAll, pulse, rectsFor, computeDomRects, showSearchHits, clearSearchHits, hidePopover, setActions: (a) => { actions = a; } };
+  return { render, remove, renderAll, pulse, flashSession, rectsFor, computeDomRects, showSearchHits, clearSearchHits, hidePopover, setActions: (a) => { actions = a; } };
 }
 
 /** Exact rects for an anchor using the page's text-layer spans. Page units at scale 1, top-left origin. */

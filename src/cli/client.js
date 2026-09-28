@@ -19,7 +19,7 @@ export function readServerInfo(home = defaultHome()) {
   try { return JSON.parse(fs.readFileSync(serverInfoPath(home), 'utf8')); } catch { return null; }
 }
 
-export async function healthy(port, timeoutMs = 800) {
+export async function healthy(port, timeoutMs = 900) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -38,7 +38,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /** Returns server info, starting the daemon when it is not running. */
 export async function ensureDaemon({ home = defaultHome(), port = Number(process.env.PDFPIN_PORT ?? DEFAULT_PORT), start = true } = {}) {
   const info = readServerInfo(home);
-  if (info && (await healthy(info.port))) return info;
+  if (!info) { if (!start) return null; }
+  // A daemon busy with a long job can be slow to answer. Ask again, patiently, before writing it
+  // off: starting a second daemon on the same home would put two writers on one store.
+  else if ((await healthy(info.port)) || (await healthy(info.port, 5000))) return info;
   if (!start) return null;
   fs.mkdirSync(home, { recursive: true });
   try { fs.unlinkSync(serverInfoPath(home)); } catch { /* no stale file */ }

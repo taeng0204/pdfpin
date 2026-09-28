@@ -63,8 +63,41 @@ function readBody(req, limit = 5 * 1024 * 1024) {
   });
 }
 
-export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, host = '127.0.0.1', onShutdown = null } = {}) {
+/**
+ * Claim a home directory for this process. Two daemons sharing one home would each cache documents
+ * and overwrite the other's writes, so the second one must not start.
+ */
+const claimedHomes = new Set(); // two Stores in one process would clobber each other just as badly
+
+function lockHome(home) {
+  const key = path.resolve(home);
+  if (claimedHomes.has(key)) throw new Error(`This process already owns ${home}`);
+  const file = path.join(home, 'daemon.lock');
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      fs.writeFileSync(file, String(process.pid), { flag: 'wx' });
+      claimedHomes.add(key);
+      return () => {
+        claimedHomes.delete(key);
+        try { if (fs.readFileSync(file, 'utf8') === String(process.pid)) fs.unlinkSync(file); } catch { /* gone already */ }
+      };
+    } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      const owner = Number(fs.readFileSync(file, 'utf8').trim());
+      if (owner && owner !== process.pid && isAlive(owner)) throw new Error(`Another pdfpin daemon (pid ${owner}) already owns ${home}`);
+      try { fs.unlinkSync(file); } catch { /* raced with its owner exiting */ }
+    }
+  }
+  throw new Error(`Could not claim ${home}`);
+}
+
+function isAlive(pid) {
+  try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
+}
+
+export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, host = '127.0.0.1', onShutdown = null, lock = false } = {}) {
   fs.mkdirSync(home, { recursive: true });
+  const releaseLock = lock ? lockHome(home) : () => {};
   const store = new Store(home);
   const hub = new SseHub();
   const settings = new SettingsStore(home);
@@ -194,10 +227,17 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   });
   server.keepAliveTimeout = 65000;
 
-  await new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(port, host, resolve);
-  });
+  try {
+    await new Promise((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(port, host, resolve);
+    });
+  } catch (e) {
+    releaseLock(); // the port was taken; do not leave this home claimed
+    hub.close();
+    await docs.close();
+    throw e;
+  }
   const actualPort = server.address().port;
   const handle = {
     server, port: actualPort, host, home, store, docs, hub, settings,
@@ -206,6 +246,7 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
       hub.close();
       await docs.close();
       await new Promise((r) => server.close(() => r()));
+      releaseLock();
     },
   };
   return handle;
@@ -237,13 +278,19 @@ async function main() {
     process.exit(0);
   };
   try {
-    handle = await createServer({ home, port, onShutdown: shutdown });
+    handle = await createServer({ home, port, onShutdown: shutdown, lock: true });
   } catch (e) {
+    if (/already owns/.test(e.message)) { console.log(e.message); process.exit(0); }
     if (e.code !== 'EADDRINUSE') { console.error('failed to start', e); process.exit(1); }
     // Another pdfpin daemon may have won the race for the port: defer to it instead of forking a second one.
     const other = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(1500) }).then((r) => r.json()).catch(() => null);
     if (other?.ok && other.home === home) { console.log(`another pdfpin daemon already serves port ${port}; exiting`); process.exit(0); }
-    handle = await createServer({ home, port: 0, onShutdown: shutdown });
+    try {
+      handle = await createServer({ home, port: 0, onShutdown: shutdown, lock: true });
+    } catch (err) {
+      if (/already owns/.test(err.message)) { console.log(err.message); process.exit(0); }
+      throw err;
+    }
   }
   fs.writeFileSync(serverInfoPath(home), JSON.stringify({ port: handle.port, pid: process.pid, startedAt: stamp(), version: VERSION, url: handle.url }, null, 2));
   console.log(`pdfpin ${VERSION} listening on ${handle.url} (home ${home})`);

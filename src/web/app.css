@@ -497,3 +497,22 @@ mark.mk { padding: 0.08em 0.22em; }
 .sel-tag { border: 0; border-radius: 6px; padding: 3px 8px; font-size: 12px; cursor: pointer; color: #1b1b1a; background: color-mix(in srgb, var(--hl-color) 70%, transparent); }
 .sel-tag:hover { background: var(--hl-color); }
 .sel-toolbar.note-mode .sel-tags { max-width: none; }
+
+/* archived sessions */
+.arch-rows { display: grid; gap: 2px; padding: 6px 0 4px; }
+.arch-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 8px 0; }
+.arch-main { min-width: 0; }
+.arch-title { font: 500 14px/1.35 var(--font-serif); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arch-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.arch-row .icon-btn { width: 28px; height: 28px; }
+.arch-row .icon-btn svg { width: 15px; height: 15px; }
+.arch-row .act-del:hover { color: var(--danger); }
+#archive-btn[hidden] { display: none; }
+
+/* one gentle sweep when a session takes focus */
+.hl.flash .hl-rect { animation: flash 900ms cubic-bezier(.3,0,.2,1); }
+@keyframes flash {
+  0% { opacity: var(--hl-opacity); }
+  25% { opacity: min(1, calc(var(--hl-opacity) + 0.35)); }
+  100% { opacity: var(--hl-opacity); }
+}

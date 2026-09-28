@@ -6,6 +6,7 @@ import { icons } from './icons.js';
 import { toast } from './toast.js';
 import { confirmDialog, pickColor } from './dialog.js';
 import { openTags, refreshTagOptions } from './tags-ui.js';
+import { openArchive } from './archive-ui.js';
 import { t } from './i18n.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -74,6 +75,7 @@ export function initPanel({ docApi, viewer, highlights }) {
       const items = orderedAnnotations().filter((a) => a.sessionId === s.id);
       const seen = items.filter((a) => visibleIds.has(a.id));
       const textHit = q && `${s.title} ${s.flow}`.toLowerCase().includes(q);
+      if (s.archived) return;
       if (state.filter.session && state.filter.session !== s.id) return;
       if (hasFilter() && !seen.length && !textHit) return;
       shown++;
@@ -151,7 +153,7 @@ export function initPanel({ docApi, viewer, highlights }) {
     const actions = `
       <button class="icon-btn act-focus" title="${t('session.focus')}" aria-pressed="${state.filter.session === s.id}">${icons.eye}</button>
       <button class="icon-btn act-sedit" title="${t('session.edit')}">${icons.edit}</button>
-      <button class="icon-btn act-sdel" title="${t('session.delete')}">${icons.trash}</button>`;
+      <button class="icon-btn act-sarch" title="${t('archive.archive')}">${icons.archive}</button>`;
     const sec = foldable({
       id: s.id,
       title: s.title || t('session.untitled'),
@@ -263,7 +265,24 @@ export function initPanel({ docApi, viewer, highlights }) {
     try { await docApi.remove(a.id); } catch (err) { toast(err.message, { error: true }); return; }
     toast(t('card.deleted'), {
       color: a.color, duration: 7000, action: t('card.undo'),
-      onAction: async () => { try { await docApi.add(snapshot); } catch (err) { toast(t('card.restoreFailed', { message: err.message }), { error: true }); } },
+      onAction: async () => {
+        try { await docApi.add(snapshot); } catch (err) {
+          // its session may have gone with it; bring the highlight back on its own rather than fail
+          if (err.status === 404 && snapshot.sessionId) {
+            try { await docApi.add({ ...snapshot, sessionId: null }); return; } catch { /* fall through */ }
+          }
+          toast(t('card.restoreFailed', { message: err.message }), { error: true });
+        }
+      },
+    });
+  }
+
+  async function archiveSession(s) {
+    const title = s.title || t('session.untitled');
+    try { await docApi.archiveSession(s.id, true); } catch (err) { toast(err.message, { error: true }); return; }
+    toast(t('archive.archived', { title }), {
+      color: s.color, duration: 7000, action: t('archive.undo'),
+      onAction: async () => { try { await docApi.archiveSession(s.id, false); } catch (err) { toast(err.message, { error: true }); } },
     });
   }
 
@@ -283,10 +302,13 @@ export function initPanel({ docApi, viewer, highlights }) {
   }
 
   function focusSession(id) {
-    state.filter.session = state.filter.session === id ? null : id;
-    if (state.filter.session) state.collapsed.delete(id);
+    const turningOn = state.filter.session !== id;
+    state.filter.session = turningOn ? id : null;
+    if (turningOn) state.collapsed.delete(id);
     renderAll();
     emit('filter');
+    // land on the session's first highlight and light the whole set up once
+    if (turningOn) highlights.flashSession(id);
   }
 
   cardsEl.addEventListener('click', async (e) => {
@@ -309,7 +331,7 @@ export function initPanel({ docApi, viewer, highlights }) {
       if (s) {
         if (e.target.closest('.act-focus')) { focusSession(s.id); return; }
         if (e.target.closest('.act-sedit')) { openSessionEditor(sec, s); return; }
-        if (e.target.closest('.act-sdel')) { deleteSession(s); return; }
+        if (e.target.closest('.act-sarch')) { archiveSession(s); return; }
       }
       toggleFold(sec);
       return;
@@ -390,6 +412,11 @@ export function initPanel({ docApi, viewer, highlights }) {
   const tagsBtn = document.getElementById('tags-btn');
   tagsBtn.innerHTML = icons.tag;
   tagsBtn.onclick = () => openTags(docApi);
+  const archiveBtn = document.getElementById('archive-btn');
+  archiveBtn.innerHTML = icons.archive;
+  archiveBtn.onclick = () => openArchive(docApi);
+  on('sessions', () => { archiveBtn.hidden = !state.sessions.some((s) => s.archived); });
+  archiveBtn.hidden = !state.sessions.some((s) => s.archived);
 
   function renderAll() { refreshTagOptions(); renderFilters(); renderCards(); }
   on('annotations', renderAll);

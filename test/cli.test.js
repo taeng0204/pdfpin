@@ -111,3 +111,16 @@ test('a foreign pdfpin daemon on the default port does not block a second home',
     await a.close();
   }
 });
+
+test('a second daemon refuses to run on a home another one already owns', async () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfpin-lock-'));
+  const { createServer } = await import('../src/server/index.js');
+  const first = await createServer({ home, port: 0, lock: true });
+  try {
+    await assert.rejects(() => createServer({ home, port: 0, lock: true }), /already/i);
+  } finally {
+    await first.close();
+  }
+  const third = await createServer({ home, port: 0, lock: true });
+  await third.close();
+});

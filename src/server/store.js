@@ -25,6 +25,10 @@ function writeJsonAtomic(file, value) {
   fs.renameSync(tmp, file);
 }
 
+function mtimeOf(file) {
+  try { return fs.statSync(file).mtimeMs; } catch { return null; }
+}
+
 function readJson(file, fallback) {
   try {
     return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -41,6 +45,7 @@ export class Store {
     this.stateFile = path.join(home, 'state.json');
     this.state = readJson(this.stateFile, { currentDocId: null });
     this.cache = new Map();
+    this.stamps = new Map(); // docId -> mtimeMs of the copy we hold
   }
 
   _file(id) {
@@ -51,6 +56,7 @@ export class Store {
     doc.updatedAt = new Date().toISOString();
     this.cache.set(doc.id, doc);
     writeJsonAtomic(this._file(doc.id), doc);
+    this.stamps.set(doc.id, mtimeOf(this._file(doc.id)));
     return doc;
   }
 
@@ -59,15 +65,19 @@ export class Store {
   }
 
   get(id) {
-    if (this.cache.has(id)) return this.cache.get(id);
+    // Trust the cache only while the file still looks like the copy we wrote. Anything else means
+    // another writer touched it, and serving our stale copy would quietly undo their work.
+    const stamp = mtimeOf(this._file(id));
+    if (this.cache.has(id) && stamp !== null && this.stamps.get(id) === stamp) return this.cache.get(id);
     const doc = readJson(this._file(id), null);
     if (doc) {
+      this.stamps.set(id, stamp);
       doc.sessions ??= [];
       doc.currentSessionId ??= null;
       doc.tagColors ??= {};
       doc.sessionColors ??= {};
       // records written before colours were a rule: give them the fields the rule needs
-      doc.sessions.forEach((s, i) => { s.color ??= COLORS[i % COLORS.length]; });
+      doc.sessions.forEach((s, i) => { s.color ??= COLORS[i % COLORS.length]; s.archived ??= false; s.archivedAt ??= null; });
       // a highlight made by hand always carried a colour the reader picked, so it is never automatic
       doc.annotations.forEach((a) => { a.colorAuto ??= a.source !== 'user'; });
       this.cache.set(id, doc);
@@ -227,6 +237,8 @@ export class Store {
     const session = {
       id: shortId('s'),
       color: fields.color ?? 'yellow',
+      archived: false,
+      archivedAt: null,
       title: fields.title ?? '',
       flow: fields.flow ?? '',
       source: fields.source ?? 'agent',
@@ -248,6 +260,10 @@ export class Store {
     const session = doc?.sessions.find((s) => s.id === sessionId);
     if (!session) return null;
     for (const k of ['title', 'flow', 'color']) if (patch[k] !== undefined) session[k] = patch[k];
+    if (patch.archived !== undefined) {
+      session.archived = patch.archived;
+      session.archivedAt = patch.archived ? new Date().toISOString() : null;
+    }
     session.updatedAt = new Date().toISOString();
     this._save(doc);
     return session;

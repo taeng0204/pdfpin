@@ -58,6 +58,7 @@ function applyStrings() {
   set('drawer-close', 'title', t('top.close'));
   set('export-btn', 'title', t('panel.export'));
   set('tags-btn', 'title', t('tags.manage'));
+  set('archive-btn', 'title', t('archive.manage'));
   set('strip', 'title', t('top.strip'));
   set('copy-all-btn', 'title', t('panel.copyAll'));
   set('page-input', 'ariaLabel', t('top.currentPage'));

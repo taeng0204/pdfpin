@@ -124,3 +124,21 @@ test('list reports session count and the latest session title', () => {
   assert.equal(row.sessionCount, 2);
   assert.equal(row.latestSession, 'latest');
 });
+
+test('a document changed on disk by someone else is re-read, not clobbered', async () => {
+  const doc = store.openDocument(meta);
+  store.addAnnotation(doc.id, { page: 1, quote: 'mine', note: '' });
+
+  // another process writes the same file
+  const file = path.join(home, 'docs', `${doc.id}.json`);
+  const outside = JSON.parse(fs.readFileSync(file, 'utf8'));
+  outside.annotations.push({ id: 'a_other0', page: 2, quote: 'theirs', note: '', color: 'blue', tag: '', rects: [], sessionId: null, source: 'agent' });
+  await new Promise((r) => setTimeout(r, 12)); // make sure the timestamp moves
+  fs.writeFileSync(file, JSON.stringify(outside, null, 2));
+
+  assert.equal(store.get(doc.id).annotations.length, 2, 'the outside write is picked up');
+  store.addAnnotation(doc.id, { page: 3, quote: 'mine again', note: '' });
+  const onDisk = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.equal(onDisk.annotations.length, 3, 'and nothing was lost when we wrote again');
+  assert.ok(onDisk.annotations.some((a) => a.id === 'a_other0'));
+});

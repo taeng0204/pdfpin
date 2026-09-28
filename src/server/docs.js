@@ -395,14 +395,30 @@ export class DocManager {
   }
 
   remove(doc, annId) {
+    const owner = this.store.get(doc.id)?.annotations.find((a) => a.id === annId)?.sessionId ?? null;
     if (!this.store.removeAnnotation(doc.id, annId)) throw new ApiError(404, `Annotation ${annId} not found`);
     this.hub.broadcast(doc.id, 'annotation.removed', { id: annId });
+    if (owner) this._pruneEmptySessions(doc, [owner]);
   }
 
   clear(doc, { tag } = {}) {
     const removed = this.store.clearAnnotations(doc.id, { tag });
     this.hub.broadcast(doc.id, 'annotations.cleared', { tag: tag || null, removed });
+    this._pruneEmptySessions(doc);
     return removed;
+  }
+
+  /** A session with nothing left in it has no reason to stay. */
+  _pruneEmptySessions(doc, only = null) {
+    const fresh = this.store.get(doc.id);
+    if (!fresh) return;
+    const candidates = only ?? fresh.sessions.map((s) => s.id);
+    for (const id of candidates) {
+      if (!fresh.sessions.some((s) => s.id === id)) continue;
+      if (fresh.annotations.some((a) => a.sessionId === id)) continue;
+      this.store.removeSession(fresh.id, id);
+      this.hub.broadcast(doc.id, 'session.removed', { id, removedAnnotations: 0, currentSessionId: this.store.get(doc.id).currentSessionId });
+    }
   }
 
   /** Create a session, optionally with its highlights. Highlights that fail to match do not abort the rest. */
@@ -427,6 +443,7 @@ export class DocManager {
 
   updateSession(doc, sessionId, patch) {
     for (const k of ['title', 'flow']) if (patch[k] !== undefined && typeof patch[k] !== 'string') throw new ApiError(400, `"${k}" must be a string`);
+    if (patch.archived !== undefined && typeof patch.archived !== 'boolean') throw new ApiError(400, '"archived" must be true or false');
     const session = this.store.updateSession(doc.id, sessionId, patch);
     if (!session) throw new ApiError(404, `Session ${sessionId} not found`);
     this.hub.broadcast(doc.id, 'session.updated', { session });
