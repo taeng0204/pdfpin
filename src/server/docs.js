@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { openPdf, closePdf, getPageIndex, offsetsToAnchor, anchorToOffsets, approxRects, parsePages } from './pdftext.js';
-import { search, rankByOverlap } from '../shared/matcher.js';
+import { search, rankByOverlap, bestQuote } from '../shared/matcher.js';
 import { docIdFor } from './store.js';
 import { revealFile } from './reveal.js';
 import { COLORS } from './palette.js';
@@ -27,6 +27,7 @@ export class ApiError extends Error {
 }
 
 const collapse = (s) => s.replace(/\s+/g, ' ').trim();
+
 
 export class DocManager {
   constructor(store, hub, settings = null) {
@@ -337,7 +338,7 @@ export class DocManager {
     const create = async (h) => {
       const idx = await getPageIndex(pdf, h.page);
       const ann = this.store.addAnnotation(doc.id, {
-        page: h.page, quote: h.quote, note: spec.note ?? '', title: spec.title ?? '', color, colorAuto, tag: spec.tag ?? '',
+        page: h.page, quote: bestQuote(spec.text, h.quote), note: spec.note ?? '', title: spec.title ?? '', color, colorAuto, tag: spec.tag ?? '',
         anchor: h.anchor, rects: approxRects(idx, h.anchor), rectsSource: 'approx', score: h.score, source: spec.source === 'user' ? 'user' : 'agent', sessionId,
       });
       this.hub.broadcast(doc.id, 'annotation.added', { annotation: ann });

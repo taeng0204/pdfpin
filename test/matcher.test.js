@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalize, search } from '../src/shared/matcher.js';
+import { normalize, search, bestQuote } from '../src/shared/matcher.js';
 
 test('normalize collapses whitespace, lowercases and maps back to raw offsets', () => {
   const { text, map } = normalize('Hello   World\n\tFoo');
@@ -91,4 +91,17 @@ test('normalize ignores combining marks so composed and decomposed accents match
   const decomposed = 'café';
   assert.equal(search(composed, decomposed).length, 1);
   assert.equal(search(decomposed, composed).length, 1);
+});
+
+test('bestQuote prefers the asked-for wording when only hyphenation differs', () => {
+  const page = 'agents resist explicit steering to- ward attack families';
+  assert.equal(bestQuote('agents resist explicit steering toward attack families', page),
+    'agents resist explicit steering toward attack families');
+});
+
+test('bestQuote keeps the page wording when the asked-for text differs by more than a hyphen', () => {
+  const page = 'agents resist explicit steering to- ward attack families';
+  assert.equal(bestQuote('agents resist all steering toward attack families', page), page);
+  assert.equal(bestQuote('', page), page);
+  assert.equal(bestQuote(undefined, '  spread  over\nlines '), 'spread over lines');
 });

@@ -1,4 +1,4 @@
-# pdfpin
+<img src="docs/images/logo.png" alt="pdfpin" width="180">
 
 Read a paper with an AI agent sitting next to you.
 
@@ -6,7 +6,7 @@ You ask a question. The agent reads the PDF, marks the passages that answer it, 
 note on each one. You read the marks in the paper itself, not in a chat window that has lost sight
 of the page.
 
-![The viewer: a paper on the left, the agent's session on the right](docs/images/viewer-light.png)
+![The viewer: a paper on the left, the agent's answer on the right](docs/images/viewer-light.png)
 
 Nothing leaves your machine. The daemon listens on loopback only and your notes sit in plain JSON
 beside the path of the PDF they belong to.

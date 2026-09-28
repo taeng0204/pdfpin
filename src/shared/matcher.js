@@ -161,3 +161,20 @@ export function rankByOverlap(query, candidates) {
     .sort((a, b) => b.score - a.score)
     .map((x) => x.c);
 }
+
+/**
+ * The quote to show under a highlight. A PDF breaks words across lines with a hyphen, so the page
+ * itself reads "steering to- ward" while whoever asked for the highlight wrote "steering toward".
+ * When the two differ only in hyphens and spacing they are the same passage, and the asked-for
+ * wording is the one that reads as prose, so prefer it. Any other difference (a typo the fuzzy
+ * matcher forgave, a word dropped) means only the page can be trusted.
+ */
+export function bestQuote(asked, onPage) {
+  const page = collapse(onPage);
+  if (typeof asked !== 'string') return page;
+  const given = collapse(asked);
+  return given && quoteKey(given) === quoteKey(page) ? given : page;
+}
+
+const collapse = (s) => String(s).replace(/\s+/g, ' ').trim();
+const quoteKey = (s) => normalize(s).text.replace(/[-\s]/g, '');
