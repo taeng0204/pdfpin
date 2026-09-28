@@ -529,3 +529,28 @@ mark.mk { padding: 0.08em 0.22em; }
 .app.no-doc .main { grid-template-columns: minmax(0, 1fr) 0; }
 .app.no-doc .panel, .app.no-doc #panel-toggle, .app.no-doc .pager, .app.no-doc .zoom,
 .app.no-doc #fit-toggle, .app.no-doc #search, .app.no-doc .conn, .app.no-doc .doc-title { display: none; }
+
+/* ---------- guided tour ---------- */
+.tour-ring { position: fixed; z-index: 55; border-radius: 12px; border: 2px solid var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); pointer-events: none; transition: all 220ms cubic-bezier(.2,.7,.2,1); animation: ring-breathe 1.8s ease-in-out infinite; }
+.tour-ring[hidden] { display: none; }
+@keyframes ring-breathe { 50% { box-shadow: 0 0 0 8px var(--accent-soft); } }
+.tour-bar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 56; display: flex; align-items: center; gap: 14px; max-width: min(640px, 92vw); padding: 11px 12px 11px 16px; border-radius: 12px; background: var(--ink); color: var(--surface); box-shadow: var(--shadow-pop); font-size: 13.5px; animation: toast-in 240ms ease-out both; }
+.tour-step { font: 11px var(--font-mono); opacity: 0.55; white-space: nowrap; }
+.tour-text { flex: 1; line-height: 1.5; }
+.tour-bar.asking .tour-text::after { content: ""; display: inline-block; width: 1px; height: 1em; margin-left: 2px; background: currentColor; vertical-align: -2px; animation: blink 900ms step-end infinite; }
+.tour-actions { display: flex; gap: 4px; flex: none; }
+.tour-btn { border: 0; background: rgba(255,255,255,0.14); color: inherit; padding: 5px 10px; border-radius: 7px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+.tour-btn:hover { background: rgba(255,255,255,0.26); }
+.tour-btn[hidden] { display: none; }
+:root[data-theme="dark"] .tour-bar { background: #f1f1ef; color: #1b1b1a; }
+:root[data-theme="dark"] .tour-btn { background: rgba(0,0,0,0.08); }
+:root[data-theme="dark"] .tour-btn:hover { background: rgba(0,0,0,0.16); }
+.tour-bar.final { display: block; background: var(--surface); color: var(--ink); border: 1px solid var(--line); padding: 20px 22px 16px; width: min(460px, 92vw); }
+.tour-final h2 { margin: 0 0 6px; font: 600 17px/1.3 var(--font-serif); }
+.tour-final p { margin: 0 0 10px; font-size: 13.5px; color: var(--ink-2); line-height: 1.55; }
+.tour-final ul { margin: 0 0 12px; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
+.tour-final li { margin: 4px 0; }
+.tour-keep { color: var(--muted) !important; font-size: 12.5px !important; }
+.tour-final-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.welcome-actions { display: flex; gap: 8px; margin: 6px 0 14px; }
+.welcome-actions .btn { margin: 0; padding: 8px 16px; font-size: 13.5px; }

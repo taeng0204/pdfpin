@@ -9,6 +9,9 @@ AI agents (Claude Code, Codex, Gemini CLI, …) or humans pin highlights and exp
 
 Works on macOS and Windows (and Linux) with Node ≥ 18. No native build step.
 
+A guided tour runs on first use: it builds a one-page demo paper, asks it two questions through the
+real API, and hands the last two steps to you. Re-run it any time from settings.
+
 ## Install
 
 ```bash

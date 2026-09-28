@@ -11,6 +11,7 @@ import { initStrip } from './strip.js';
 import { initKeys } from './keys.js';
 import { initHistory } from './history.js';
 import { openSettings } from './settings-ui.js';
+import { runTour, startTour, tourWanted } from './tour.js';
 import { t, setLanguage } from './i18n.js';
 import { formatBinding } from './shortcuts.js';
 import { connectEvents } from './sse.js';
@@ -43,6 +44,7 @@ function applyStrings() {
   set('welcome-title', 'textContent', t('welcome.title'));
   set('welcome-step1', 'textContent', t('welcome.step1'));
   set('welcome-open', 'textContent', t('welcome.open'));
+  set('welcome-tour', 'textContent', t('tour.start'));
   set('welcome-step2', 'textContent', t('welcome.step2'));
   const cli = $('welcome-cli');
   if (cli) cli.innerHTML = t('welcome.cli', { cmd: '<code>pdfpin open file.pdf</code>' });
@@ -117,8 +119,12 @@ async function boot() {
       app.classList.add('no-doc');
       $('welcome').hidden = false;
       $('welcome-open').onclick = () => documents.pickAndOpen();
+      const tourBtn = $('welcome-tour');
+      tourBtn.hidden = !!state.settings?.onboarded;
+      tourBtn.onclick = () => startTour();
+      $('welcome-open').classList.toggle('primary', tourBtn.hidden);
       applyStrings();
-      documents.open();
+      if (tourBtn.hidden) documents.open();
     } else {
       $('loading').hidden = false;
       $('loading-text').textContent = t('app.loadFailed', { message: e.message });
@@ -287,6 +293,15 @@ async function boot() {
     'settings.changed': ({ settings }) => { state.settings = settings; applySettings(); },
     resync,
   }, (s) => { const c = $('conn'); c.dataset.state = s; c.title = t(`conn.${s}`); });
+
+  // the guided tour, either asked for by the url or offered once on a first run
+  if (tourWanted()) {
+    runTour({ docApi, viewer, highlights });
+    on('tour:open-real', () => documents.pickAndOpen());
+  } else if (!state.settings?.onboarded) {
+    toast(t('tour.invite'), { duration: 14000, action: t('tour.start'), onAction: () => startTour() });
+    api('PATCH', '/api/settings', { onboarded: true }).catch(() => {});
+  }
 
   // hash deep link: #a_xxx or #p3
   const h = location.hash.slice(1);

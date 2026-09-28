@@ -138,6 +138,14 @@ export function openSettings() {
     );
     body.appendChild(look);
 
+    const tour = section(t('settings.tour'));
+    const tourBtn = document.createElement('button');
+    tourBtn.className = 'btn';
+    tourBtn.textContent = t('settings.tourRun');
+    tourBtn.onclick = async () => { close(); const { startTour } = await import('./tour.js'); startTour(); };
+    tour.querySelector('.set-rows').appendChild(row(t('settings.tour'), tourBtn));
+    body.appendChild(tour);
+
     const rule = section(t('settings.palette'), t('settings.paletteHint'));
     rule.querySelector('h3').textContent = t('settings.colorBy');
     rule.querySelector('.set-hint').textContent = s.colorBy === 'session' ? t('settings.colorBySessionHint') : t('settings.colorByTagHint');
