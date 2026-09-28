@@ -46,5 +46,8 @@
     "commander": "^13.1.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.3.289"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
   }
 }

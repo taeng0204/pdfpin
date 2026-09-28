@@ -1,6 +1,6 @@
 // PDF rendering: page shells for every page; canvases, fonts and text layers are all built on demand
 // for the pages near the viewport and released again when they scroll away.
-import { textItems, buildPageText } from '/shared/pagetext.js';
+import { textItems, buildPageText } from '../shared/pagetext.js';
 import { state, emit } from './state.js';
 import { t } from './i18n.js';
 import { ellipsis } from './text.js';

@@ -1,5 +1,5 @@
 // Highlight overlay: anchors → exact DOM rects via Range, rendering, hover popover, selection pulse.
-import { mergeLineRects } from '/shared/pagetext.js';
+import { mergeLineRects } from '../shared/pagetext.js';
 import { state, on, select, emit, visibleAnnotations, hasFilter, isArchived, orderedAnnotations } from './state.js';
 import { renderMarkdown } from './markdown.js';
 import { icons } from './icons.js';

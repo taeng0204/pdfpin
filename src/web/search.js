@@ -1,7 +1,7 @@
 // In-document search. Finding runs on the cheap page index; glyph rectangles are measured only for
 // the pages whose text layer is currently built, so a hit on page 300 costs nothing until you go there.
-import { search } from '/shared/matcher.js';
-import { offsetsToAnchor } from '/shared/pagetext.js';
+import { search } from '../shared/matcher.js';
+import { offsetsToAnchor } from '../shared/pagetext.js';
 import { on } from './state.js';
 import { t } from './i18n.js';
 import { icons } from './icons.js';

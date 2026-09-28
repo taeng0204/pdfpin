@@ -1,5 +1,5 @@
 // Select text on a page → floating toolbar → create a user annotation.
-import { mergeLineRects } from '/shared/pagetext.js';
+import { mergeLineRects } from '../shared/pagetext.js';
 import { COLORS } from './state.js';
 import { icons } from './icons.js';
 import { toast } from './toast.js';
@@ -11,14 +11,14 @@ const escAttr = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<':
 const colorOfTag = (tag) => [...state.annotations.values()].find((a) => a.tag === tag)?.color ?? 'yellow';
 
 /** Tags in the order they help here: the ones this document already leans on, then the rest. */
-function orderedTags() {
+export function orderedTags() {
   const used = new Map();
   for (const a of state.annotations.values()) if (a.tag) used.set(a.tag, (used.get(a.tag) ?? 0) + 1);
   return [...used.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([tag]) => tag);
 }
 
 /** Every tag, on one scrolling line. Slicing the list off would hide tags with no way back to them. */
-function tagChips() {
+export function tagChips() {
   const tags = orderedTags();
   if (!tags.length) return '';
   const chips = tags.map((tag) => `<button class="sel-tag hl-color-${colorOfTag(tag)}" data-tag="${escAttr(tag)}" title="${escAttr(t('sel.tagged', { tag }))}">${escAttr(tag)}</button>`).join('');
