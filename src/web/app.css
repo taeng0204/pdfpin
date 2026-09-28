@@ -541,11 +541,15 @@ mark.mk { padding: 0.08em 0.22em; }
 .tour-actions { display: flex; gap: 4px; flex: none; }
 .tour-btn { border: 0; background: rgba(255,255,255,0.14); color: inherit; padding: 5px 10px; border-radius: 7px; cursor: pointer; font-size: 12px; white-space: nowrap; }
 .tour-btn:hover { background: rgba(255,255,255,0.26); }
+.tour-btn.go { background: var(--surface); color: var(--ink); font-weight: 600; padding: 6px 14px; }
+.tour-btn.go:hover { background: var(--surface); filter: brightness(0.94); }
+:root[data-theme="dark"] .tour-btn.go { background: var(--ink); color: var(--surface); }
 .tour-btn[hidden] { display: none; }
 :root[data-theme="dark"] .tour-bar { background: #f1f1ef; color: #1b1b1a; }
 :root[data-theme="dark"] .tour-btn { background: rgba(0,0,0,0.08); }
 :root[data-theme="dark"] .tour-btn:hover { background: rgba(0,0,0,0.16); }
-.tour-bar.final { display: block; background: var(--surface); color: var(--ink); border: 1px solid var(--line); padding: 20px 22px 16px; width: min(460px, 92vw); }
+.tour-bar.final, :root[data-theme="dark"] .tour-bar.final { display: block; background: var(--surface); color: var(--ink); border: 1px solid var(--line); padding: 20px 22px 16px; width: min(460px, 92vw); }
+.tour-final h2, .tour-final li { color: var(--ink); }
 .tour-final h2 { margin: 0 0 6px; font: 600 17px/1.3 var(--font-serif); }
 .tour-final p { margin: 0 0 10px; font-size: 13.5px; color: var(--ink-2); line-height: 1.55; }
 .tour-final ul { margin: 0 0 12px; padding-left: 18px; font-size: 13px; color: var(--ink-2); }

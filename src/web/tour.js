@@ -35,11 +35,29 @@ export function runTour({ docApi, viewer, highlights }) {
   const stepEl = root.querySelector('.tour-step');
   const textEl = root.querySelector('.tour-text');
   const skipStepBtn = root.querySelector('.tour-skip-step');
+  const goBtn = document.createElement('button');
+  goBtn.className = 'tour-btn go';
+  goBtn.hidden = true;
+  root.querySelector('.tour-actions').prepend(goBtn);
   root.querySelector('.tour-skip').textContent = t('tour.skip');
   root.querySelector('.tour-skip').onclick = () => finish();
   skipStepBtn.textContent = t('tour.skipStep');
 
   const guard = () => { if (cancelled) throw CANCELLED; };
+
+  /** Show a button and wait for it. Watching steps advance when the reader is ready, not on a clock. */
+  function press(label) {
+    guard();
+    goBtn.textContent = label;
+    goBtn.hidden = false;
+    return new Promise((resolve) => {
+      const done = () => { goBtn.hidden = true; goBtn.onclick = null; document.removeEventListener('keydown', onKey); resolve(); };
+      const onKey = (e) => { if (e.key === 'Enter' && !e.target.closest?.('input, textarea')) { e.preventDefault(); done(); } };
+      goBtn.onclick = done;
+      document.addEventListener('keydown', onKey);
+      goBtn.focus();
+    });
+  }
   const say = (text, act) => { guard(); textEl.textContent = text; stepEl.textContent = t('tour.step', { n: act, total: TOTAL }); };
 
   function point(el) {
@@ -66,14 +84,12 @@ export function runTour({ docApi, viewer, highlights }) {
 
   // --- act one: the agent works, the reader watches -------------------------------------------
   async function act1(quotes) {
-    say(t('tour.a1asking', { q: t('tour.q1') }), 1);
-    bar.classList.add('asking');
-    await sleep(1600);
-    bar.classList.remove('asking');
-    guard();
+    say(t('tour.a1ready', { q: t('tour.q1') }), 1);
+    await press(t('tour.ask'));
 
-    const s1 = (await docApi.addSession({ title: t('tour.q1'), flow: t('tour.q1flow') })).session;
     say(t('tour.a1marking'), 1);
+    bar.classList.add('asking');
+    const s1 = (await docApi.addSession({ title: t('tour.q1'), flow: t('tour.q1flow') })).session;
     const marks = [
       { text: quotes[0], note: t('tour.q1n1'), tag: 'method' },
       { text: quotes[1], note: t('tour.q1n2'), tag: 'matching' },
@@ -82,17 +98,22 @@ export function runTour({ docApi, viewer, highlights }) {
     for (const m of marks) {
       guard();
       const { annotation } = await docApi.add({ ...m, sessionId: s1.id });
-      await sleep(180);
+      await sleep(200);
       const rects = await highlights.rectsFor(state.annotations.get(annotation.id) ?? annotation);
       viewer.scrollToRect(annotation.page, rects[0] || null);
-      await sleep(620);
+      await sleep(700);
     }
+    bar.classList.remove('asking');
 
-    await sleep(500);
+    say(t('tour.a1done'), 1);
+    await press(t('tour.next'));
+
     say(t('tour.a1second'), 1);
+    await press(t('tour.askAgain'));
     const s2 = (await docApi.addSession({ title: t('tour.q2'), flow: t('tour.q2flow') })).session;
     await docApi.add({ text: quotes[3], note: t('tour.q2n1'), tag: 'privacy', sessionId: s2.id });
-    await sleep(1800);
+    await sleep(900);
+    await press(t('tour.next'));
   }
 
   // --- act two: the two directions of the link ------------------------------------------------

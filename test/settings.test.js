@@ -74,3 +74,9 @@ test('settings can be reset', async () => {
   assert.equal(r.status, 200);
   assert.deepEqual(r.json.settings, DEFAULT_SETTINGS);
 });
+
+test('a fresh install reads on a light page, and can be told to follow the system', async () => {
+  await api('DELETE', '/api/settings');
+  assert.equal((await api('GET', '/api/settings')).json.settings.theme, 'light');
+  assert.equal((await api('PATCH', '/api/settings', { theme: 'system' })).json.settings.theme, 'system');
+});

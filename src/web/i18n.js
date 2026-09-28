@@ -5,6 +5,11 @@ const EN = {
   'tour.start': 'Take the tour',
   'tour.invite': 'First time here? A two-minute tour shows how it works.',
   'tour.skip': 'Skip',
+  'tour.ask': 'Ask',
+  'tour.askAgain': 'Ask the second question',
+  'tour.next': 'Next',
+  'tour.a1ready': 'Your agent is about to be asked: “{q}”',
+  'tour.a1done': 'Three passages, each with a note saying why it matters. The overview at the top ties them together.',
   'tour.step': '{n} of {total}',
   'tour.loading': 'Setting up a demo paper…',
 
@@ -17,7 +22,6 @@ const EN = {
   'tour.q2flow': 'No. The server answers this computer and nothing else.',
   'tour.q2n1': 'Loopback only, so nothing on the network can reach it.',
 
-  'tour.a1asking': 'Asking your agent: “{q}”',
   'tour.a1marking': 'It reads the paper and marks what it found.',
   'tour.a1second': 'A second question starts its own session. The earlier one folds away, so the panel reads as a history.',
   'tour.a2card': 'Click a note to jump to it on the page.',
@@ -253,6 +257,11 @@ const KO = {
   'tour.start': '둘러보기',
   'tour.invite': '처음이신가요? 2분이면 사용법을 다 봅니다.',
   'tour.skip': '건너뛰기',
+  'tour.ask': '질문하기',
+  'tour.askAgain': '두 번째 질문하기',
+  'tour.next': '다음',
+  'tour.a1ready': '에이전트에게 이렇게 물어볼 참입니다: “{q}”',
+  'tour.a1done': '세 곳을 표시했고 각각 왜 중요한지 적혀 있습니다. 맨 위 개요가 그 셋을 이어줍니다.',
   'tour.step': '{total} 중 {n}',
   'tour.loading': '데모 논문을 준비하는 중…',
 
@@ -265,7 +274,6 @@ const KO = {
   'tour.q2flow': '나가지 않습니다. 서버는 이 컴퓨터만 상대합니다.',
   'tour.q2n1': '루프백 전용이라 네트워크에서는 닿을 수 없습니다.',
 
-  'tour.a1asking': '에이전트에게 묻는 중: “{q}”',
   'tour.a1marking': '논문을 읽고 찾은 곳을 표시합니다.',
   'tour.a1second': '질문이 바뀌면 새 세션이 생깁니다. 앞선 세션은 접혀서, 패널이 기록처럼 쌓입니다.',
   'tour.a2card': '노트를 눌러보세요. 문서의 그 자리로 이동합니다.',

@@ -28,7 +28,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   language: 'auto',
   onboarded: false,
   colorBy: 'tag',
-  theme: 'system',
+  theme: 'light',   // the paper reads best on paper; "system" is one click away in settings
   dimPages: true,
   zoom: 'fit-width',
   palette: [...COLORS],
