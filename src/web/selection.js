@@ -4,6 +4,8 @@ import { COLORS } from './state.js';
 import { icons } from './icons.js';
 import { toast } from './toast.js';
 
+const swatches = () => COLORS.map((c) => `<button class="color-dot hl-color-${c}" data-color="${c}" title="${c}"></button>`).join('');
+
 export function initSelection({ viewer, docApi }) {
   const bar = document.getElementById('sel-toolbar');
   let pending = null; // { page, anchor, quote, rects }
@@ -53,7 +55,7 @@ export function initSelection({ viewer, docApi }) {
   function show(p) {
     pending = p;
     bar.classList.remove('note-mode');
-    bar.innerHTML = `${COLORS.map((c) => `<button class="color-dot hl-color-${c}" data-color="${c}" title="Highlight ${c}"></button>`).join('')}<span class="sep"></span><button class="tb-btn act-note">${icons.note}<span>Note</span></button>`;
+    bar.innerHTML = `<span class="swatches">${swatches()}</span><span class="sep"></span><button class="tb-btn act-note">${icons.note}<span>Note</span></button>`;
     bar.hidden = false;
     place(p.bounds);
   }
@@ -83,7 +85,7 @@ export function initSelection({ viewer, docApi }) {
     if (e.target.closest('.act-note')) {
       const b = pending.bounds;
       bar.classList.add('note-mode');
-      bar.innerHTML = `<textarea placeholder="Why does this matter? (Markdown)"></textarea><div class="note-row">${COLORS.map((c) => `<button class="color-dot hl-color-${c}" data-color="${c}" title="Save with ${c}"></button>`).join('')}<span class="grow"></span><button class="tb-btn act-cancel">Cancel</button></div>`;
+      bar.innerHTML = `<textarea placeholder="Why does this matter? (Markdown)"></textarea><div class="note-row"><span class="swatches">${swatches()}</span><span class="grow"></span><button class="tb-btn act-cancel">Cancel</button></div>`;
       place(b);
       const ta = bar.querySelector('textarea');
       setTimeout(() => ta.focus(), 0);

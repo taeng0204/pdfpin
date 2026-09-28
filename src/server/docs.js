@@ -6,7 +6,8 @@ import { search, rankByOverlap } from '../shared/matcher.js';
 import { docIdFor } from './store.js';
 import { revealFile } from './reveal.js';
 
-export const COLORS = ['yellow', 'green', 'blue', 'pink', 'purple', 'orange'];
+// Ordered so the first tags in a document get the most distinguishable colours.
+export const COLORS = ['yellow', 'green', 'blue', 'pink', 'purple', 'orange', 'teal', 'red', 'cyan', 'lime', 'indigo', 'grape'];
 export const MAX_QUERY = 2000; // characters; keeps the fuzzy DP bounded
 const MAX_OPEN_PDFS = 8;       // pdf.js documents kept in memory (LRU)
 

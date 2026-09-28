@@ -112,3 +112,16 @@ test('a document without annotations still writes the file with count 0', async 
   assert.equal(md.count, 0);
   assert.match(fs.readFileSync(md.path, 'utf8'), /^# Fixture Paper\n/);
 });
+
+test('every palette colour exports as a distinct RGB triple', async () => {
+  const { COLORS } = await import('../src/server/docs.js');
+  const { colorRgb } = await import('../src/server/export.js');
+  const seen = new Set();
+  for (const c of COLORS) {
+    const rgb = colorRgb(c);
+    assert.equal(rgb.length, 3, c);
+    assert.ok(rgb.every((v) => v >= 0 && v <= 1), `${c} out of range`);
+    seen.add(rgb.join(','));
+  }
+  assert.equal(seen.size, COLORS.length, 'two colours share an RGB value');
+});

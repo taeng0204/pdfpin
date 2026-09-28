@@ -22,7 +22,7 @@ export const state = {
   zoomMode: pref('zoom', 'fit-width'),
 };
 
-export const COLORS = ['yellow', 'green', 'blue', 'pink', 'purple', 'orange'];
+export const COLORS = ['yellow', 'green', 'blue', 'pink', 'purple', 'orange', 'teal', 'red', 'cyan', 'lime', 'indigo', 'grape'];
 
 export function setSessions(list, currentId) {
   state.sessions = [...list];

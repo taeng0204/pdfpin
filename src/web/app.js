@@ -15,6 +15,9 @@ import { toast } from './toast.js';
 import { icons } from './icons.js';
 
 const $ = (id) => document.getElementById(id);
+export const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+/** Human label for a shortcut, e.g. "⌘⇧H" on macOS and "Ctrl+Shift+H" elsewhere. */
+const key = (k, { shift = false } = {}) => (IS_MAC ? `⌘${shift ? '⇧' : ''}${k}` : `Ctrl+${shift ? 'Shift+' : ''}${k}`);
 const root = document.documentElement;
 const app = $('app');
 
@@ -42,8 +45,8 @@ async function boot() {
     applyTheme();
     applyPanel();
     $('panel-toggle').innerHTML = icons.panel;
-    const history = initHistory();
-    if (e.status === 404) history.open();
+    const documents = initHistory();
+    if (e.status === 404) documents.open();
     return;
   }
   if (!m) history.replaceState(null, '', `/view/${doc.id}`);
@@ -72,10 +75,10 @@ async function boot() {
   initSelection({ viewer, docApi });
   initStrip({ viewer });
 
-  const history = initHistory();
+  const documents = initHistory();
   const ui = {
-    toggleHistory() { history.isOpen() ? history.close() : history.open(); },
-    togglePanel() { state.panelOpen = !state.panelOpen; savePref('panel', state.panelOpen); applyPanel(); },
+    toggleDocuments() { documents.isOpen() ? documents.close() : documents.open(); },
+    toggleHistory() { state.panelOpen = !state.panelOpen; savePref('panel', state.panelOpen); applyPanel(); },
     toggleTheme() { state.theme = state.theme === 'dark' ? 'light' : 'dark'; savePref('theme', state.theme); applyTheme(); },
     toggleHighlights() { app.classList.toggle('hide-highlights'); },
   };
@@ -83,7 +86,9 @@ async function boot() {
 
   // top bar wiring
   $('theme-toggle').onclick = ui.toggleTheme;
-  $('panel-toggle').onclick = ui.togglePanel;
+  $('panel-toggle').onclick = ui.toggleHistory;
+  $('history-toggle').title = `Documents (${key('D')})`;
+  $('panel-toggle').title = `History (${key('H', { shift: IS_MAC })})`;
   $('dim-toggle').onchange = (e) => { state.dim = e.target.checked; savePref('dim', state.dim); applyTheme(); };
   $('zoom-in').onclick = () => viewer.zoomStep(1);
   $('zoom-out').onclick = () => viewer.zoomStep(-1);
@@ -168,7 +173,7 @@ async function boot() {
     },
     'doc.reloaded': () => { toast('The PDF changed on disk — reloading', { duration: 1500 }); setTimeout(() => location.reload(), 600); },
     'doc.removed': () => { toast('This document was removed from pdfpin', { duration: 2500 }); setTimeout(() => { location.href = '/'; }, 800); },
-    'docs.changed': () => { if (history.isOpen()) history.refresh(); },
+    'docs.changed': () => { if (documents.isOpen()) documents.refresh(); },
     resync,
   }, (s) => { const c = $('conn'); c.dataset.state = s; c.title = { open: 'Live: connected', connecting: 'Connecting…', error: 'Disconnected' }[s]; });
 

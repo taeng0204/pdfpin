@@ -5,12 +5,27 @@ import { PDFDocument, PDFName, PDFArray, PDFHexString, PDFString } from 'pdf-lib
 import { ApiError } from './docs.js';
 import { getPageIndex, toPdfRect } from './pdftext.js';
 
-const PALETTE = { yellow: '#FFE066', green: '#8CE99A', blue: '#74C0FC', pink: '#FAA2C1', purple: '#B197FC', orange: '#FFC078' };
+const PALETTE = {
+  yellow: '#FFE066',
+  green: '#8CE99A',
+  blue: '#74C0FC',
+  pink: '#FAA2C1',
+  purple: '#B197FC',
+  orange: '#FFC078',
+  teal: '#63E6BE',
+  red: '#FFA8A8',
+  cyan: '#66D9E8',
+  lime: '#C0EB75',
+  indigo: '#91A7FF',
+  grape: '#E599F7',
+};
 
-const rgb = (name) => {
+/** A palette colour as a PDF RGB triple (0-1). Unknown names fall back to yellow. */
+export const colorRgb = (name) => {
   const hex = PALETTE[name] || PALETTE.yellow;
   return [1, 3, 5].map((i) => +(parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(4));
 };
+const rgb = colorRgb;
 
 /** ISO date → PDF date string (D:YYYYMMDDHHmmSSZ); undefined when unparsable. Plain strings become names in ctx.obj, hence PDFString. */
 const pdfDate = (iso) => {

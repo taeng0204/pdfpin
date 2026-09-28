@@ -53,7 +53,7 @@ passages with short notes; the human sees them live in the viewer's side panel.
   two sentences on *why* the passage matters. Markdown subset (`**bold**`, `*italic*`, `` `code` ``, `- lists`, links).
 - One question → one session. Do not clear old sessions; the reader keeps them as history.
 - **Colour follows the tag** and you normally leave it out: a tag keeps one colour across the document and a
-  new tag takes the next free one (yellow, green, blue, pink, purple, orange). Set `"color"` only to override.
+  new tag takes the next free one. Set `"color"` only to override. Palette: yellow, green, blue, pink, purple, orange, teal, red, cyan, lime, indigo, grape.
   So give every highlight a `tag` — that is what makes the colours mean something to the reader.
 - `pdfpin list` shows sessions and highlights; `pdfpin export` writes `<name>.annotated.pdf` with real PDF
   highlight annotations; `--format md` writes a Markdown report grouped by session.

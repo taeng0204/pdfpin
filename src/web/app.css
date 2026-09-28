@@ -30,6 +30,12 @@
   --hl-pink: #faa2c1;
   --hl-purple: #b197fc;
   --hl-orange: #ffc078;
+  --hl-teal: #63e6be;
+  --hl-red: #ffa8a8;
+  --hl-cyan: #66d9e8;
+  --hl-lime: #c0eb75;
+  --hl-indigo: #91a7ff;
+  --hl-grape: #e599f7;
   --hl-blend: multiply;
   --hl-opacity: 0.34;
   --mark-alpha: 0.4;
@@ -152,6 +158,12 @@ button, input, textarea { font: inherit; color: inherit; }
 .hl-color-pink, .mk-pink { --hl-color: var(--hl-pink); }
 .hl-color-purple, .mk-purple { --hl-color: var(--hl-purple); }
 .hl-color-orange, .mk-orange { --hl-color: var(--hl-orange); }
+.hl-color-teal, .mk-teal { --hl-color: var(--hl-teal); }
+.hl-color-red, .mk-red { --hl-color: var(--hl-red); }
+.hl-color-cyan, .mk-cyan { --hl-color: var(--hl-cyan); }
+.hl-color-lime, .mk-lime { --hl-color: var(--hl-lime); }
+.hl-color-indigo, .mk-indigo { --hl-color: var(--hl-indigo); }
+.hl-color-grape, .mk-grape { --hl-color: var(--hl-grape); }
 .search-hit { position: absolute; background: var(--search-hit); border-radius: 2px; mix-blend-mode: var(--hl-blend); pointer-events: none; }
 .search-hit.current { outline: 2px solid var(--accent); outline-offset: 1px; background: transparent; mix-blend-mode: normal; }
 .app.hide-highlights .hl { display: none; }
@@ -297,7 +309,8 @@ mark.mk { color: inherit; background: color-mix(in srgb, var(--hl-color) calc(va
 .sel-toolbar[hidden] { display: none; }
 .color-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: var(--hl-color); padding: 0; transition: transform 100ms; }
 .color-dot:hover { transform: scale(1.15); }
-.sel-toolbar .color-dot { width: 20px; height: 20px; }
+.sel-toolbar .color-dot { width: 18px; height: 18px; }
+.swatches { display: grid; grid-template-columns: repeat(6, 18px); gap: 4px; }
 .sel-toolbar .color-dot:hover { border-color: var(--surface); }
 .sel-toolbar .sep { width: 1px; height: 16px; background: rgba(255,255,255,0.2); margin: 0 3px; }
 .sel-toolbar .tb-btn { border: 0; background: transparent; color: inherit; padding: 3px 8px; border-radius: 6px; cursor: pointer; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; }

@@ -326,3 +326,17 @@ test('colour follows the tag: same tag keeps its colour, new tags take the next 
   const untagged = await api('POST', `/api/docs/${id}/annotations`, { text: 'Page two', note: '' });
   assert.equal(untagged.json.annotation.color, 'yellow'); // no tag, no rule: the default
 });
+
+test('the palette offers twelve named colours and rejects anything else', async () => {
+  const { COLORS } = await import('../src/server/docs.js');
+  assert.equal(COLORS.length, 12);
+  for (const c of ['yellow', 'green', 'blue', 'pink', 'purple', 'orange', 'teal', 'red', 'cyan', 'lime', 'indigo', 'grape']) {
+    assert.ok(COLORS.includes(c), `missing ${c}`);
+  }
+  const ok = await api('POST', `/api/docs/${docId}/annotations`, { text: 'Hello World', note: '', color: 'teal' });
+  assert.equal(ok.status, 201, ok.text);
+  assert.equal(ok.json.annotation.color, 'teal');
+  const bad = await api('POST', `/api/docs/${docId}/annotations`, { text: 'Hello World', note: '', color: 'chartreuse' });
+  assert.equal(bad.status, 400);
+  assert.match(bad.json.error, /chartreuse/);
+});

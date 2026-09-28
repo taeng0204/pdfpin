@@ -10,12 +10,15 @@ export function initKeys({ viewer, search, ui }) {
     if (mod && (e.key === '=' || e.key === '+')) { e.preventDefault(); viewer.zoomStep(1); return; }
     if (mod && e.key === '-') { e.preventDefault(); viewer.zoomStep(-1); return; }
     if (mod && e.key === '0') { e.preventDefault(); viewer.setZoom('fit-width'); return; }
+    if (mod && !e.altKey && e.key.toLowerCase() === 'd') { e.preventDefault(); ui.toggleDocuments(); return; }
+    // ⌘H is taken by "Hide" on macOS, so ⌘⇧H is the one that actually reaches us there
+    if (mod && !e.altKey && e.key.toLowerCase() === 'h') { e.preventDefault(); ui.toggleHistory(); return; }
     if (typing || mod || e.altKey) return;
     switch (e.key) {
       case 'n': case 'j': step(1); break;
       case 'p': case 'k': step(-1); break;
-      case 't': ui.togglePanel(); break;
-      case 'l': ui.toggleHistory(); break;
+      case 't': ui.toggleHistory(); break;
+      case 'l': ui.toggleDocuments(); break;
       case 'd': ui.toggleTheme(); break;
       case 'h': ui.toggleHighlights(); break;
       case '[': viewer.scrollToPage(Math.max(1, state.currentPage - 1)); break;

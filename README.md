@@ -44,9 +44,12 @@ pdfpin status · pdfpin stop
 - Evidence strip: a minimap of highlights along the right edge; click to jump.
 - Search in the document (`⌘/Ctrl+F`), zoom (`⌘/Ctrl +/−/0`, ctrl+wheel), fit width / fit page.
 - Select text on a page → floating toolbar → highlight in a colour, optionally with a note.
-- Light / dark theme (`d`), dimmed pages in dark mode, panel toggle (`t`), hide highlights (`h`).
-- Documents drawer (`l` or the library button): every PDF opened so far with its note count, tags and
+- Light / dark theme (`d`), dimmed pages in dark mode, hide highlights (`h`).
+- History panel (`⌘H` / `Ctrl+H`, or `t`) and Documents drawer (`⌘D` / `Ctrl+D`, or `l`).
+  On macOS the system takes plain `⌘H`, so the History panel answers to `⌘⇧H`.
+- Documents drawer (`⌘D`, `l`, or the library button): every PDF opened so far with its note count, tags and
   latest session; click one to open it instantly (it also becomes the CLI's current document).
+- Twelve highlight colours; a tag keeps one colour across a document and a new tag takes the next free one.
 
 ## How it works
 
