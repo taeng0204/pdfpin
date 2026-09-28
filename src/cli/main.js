@@ -8,6 +8,7 @@ import { COLORS } from '../server/docs.js';
 import { Client, CliError, ensureDaemon, stopDaemon, readServerInfo, healthy } from './client.js';
 import { openViewer } from './launch.js';
 import { GUIDE } from './guide.js';
+import * as skills from './skill.js';
 
 const program = new Command();
 const home = defaultHome();
@@ -444,6 +445,56 @@ program
     for (const d of r.docs) out(`${d.current ? '*' : ' '} ${d.id}  ${d.annotationCount.toString().padStart(3)} ann  ${d.title}  (${d.path})`);
   });
 
+const skill = program.command('skill').description('install the agent skill for Claude Code and Codex');
+
+/** Targets asked for by flag, or every agent already installed on this machine. */
+function pickTargets(opts) {
+  const rows = skills.status();
+  const named = skills.AGENTS.filter((a) => opts[a.id]).map((a) => a.id);
+  return named.length ? rows.filter((r) => named.includes(r.id)) : rows.filter((r) => r.present);
+}
+
+const agentOptions = (cmd) => skills.AGENTS.reduce((c, a) => c.option(`--${a.id}`, `${a.label} only`), cmd);
+
+agentOptions(skill.command('list', { isDefault: true }).description('show where the skill is installed'))
+  .action(() => {
+    const rows = skills.status();
+    const said = {
+      absent: 'not installed',
+      current: 'installed',
+      outdated: 'installed, older than this pdfpin — run `pdfpin skill install`',
+      modified: 'a copy pdfpin did not write — `pdfpin skill install --force` replaces it',
+    };
+    for (const r of rows) {
+      const where = r.state === 'absent' ? (r.present ? r.dest : `${r.agentHome} not found`) : r.dest;
+      out(`${r.label.padEnd(12)} ${said[r.state].padEnd(20)} ${where}`);
+    }
+    if (rows.every((r) => !r.present)) out('\nNeither agent is installed here. `pdfpin skill install --claude` writes it anyway.');
+  });
+
+agentOptions(skill.command('install').description('copy the skill into the agents\' skill directories'))
+  .option('-f, --force', 'replace a copy pdfpin did not write')
+  .action((opts) => {
+    const chosen = pickTargets(opts);
+    if (!chosen.length) return out('Neither Claude Code nor Codex is installed here. Pass --claude or --codex to install anyway.');
+    for (const t of chosen) {
+      const r = skills.install(t, { force: opts.force });
+      if (r === 'modified') err(`✘ ${t.label}: ${t.dest} holds a copy pdfpin did not write. Re-run with --force to replace it.`);
+      else out(`${t.label}: ${r === 'current' ? 'already up to date' : r} · ${t.dest}`);
+    }
+    out('\nThe agent picks it up on its next run; ask it to "highlight the evidence in this PDF".');
+  });
+
+agentOptions(skill.command('remove').description('take the skill out again'))
+  .option('-f, --force', 'remove a copy pdfpin did not write')
+  .action((opts) => {
+    for (const t of pickTargets(opts)) {
+      const r = skills.remove(t, { force: opts.force });
+      if (r === 'modified') err(`✘ ${t.label}: ${t.dest} holds a copy pdfpin did not write. Re-run with --force to remove it.`);
+      else out(`${t.label}: ${r === 'absent' ? 'was not installed' : 'removed'} · ${t.dest}`);
+    }
+  });
+
 program
   .command('status')
   .description('show daemon status')
@@ -456,6 +507,9 @@ program
     const { docs } = await c.call('GET', '/api/docs');
     const cur = docs.find((d) => d.current);
     if (cur) out(`current: ${cur.title} (${cur.annotationCount} annotations) · ${cur.path}`);
+    const word = { absent: 'not installed', current: 'installed', outdated: 'needs `pdfpin skill install`', modified: 'a copy pdfpin did not write' };
+    const rows = skills.status().filter((r) => r.present || r.state !== 'absent');
+    if (rows.length) out(`skill: ${rows.map((r) => `${r.label} ${word[r.state]}`).join(' · ')}`);
   });
 
 program

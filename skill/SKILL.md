@@ -47,6 +47,10 @@ passages with short notes; the human sees them live in the viewer's side panel.
 
 - Quote text **exactly as printed in `pdfpin text`** (5–300 characters, one page at a time; split quotes that cross pages).
   Case, whitespace and end-of-line hyphenation do not matter; small typos are tolerated.
+- Read narrowly. `pdfpin find "phrase"` when you can guess the wording, `pdfpin text -p 4-6` for a
+  section. Pushing a whole paper through `pdfpin text` spends the context you need for the notes.
+- Check which document you are on before marking (`pdfpin docs`, or the header of `pdfpin list`).
+  `pdfpin open` makes a document current, and every command takes `-d <id|path|file name>`.
 - Exit code 2 = something was not found. The output lists up to three nearby candidates with page numbers; retry with one.
 - If the reply says the PDF carries no text layer, stop retrying: it is a scan and no quote will ever match.
 - The same phrase can occur several times: pass `"page": N`, or `"all": true` to highlight every occurrence.
