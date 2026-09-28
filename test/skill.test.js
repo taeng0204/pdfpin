@@ -10,7 +10,8 @@ const rowsOf = (home) => Object.fromEntries(status(home).map((r) => [r.id, r]));
 const skillAt = (row) => path.join(row.dest, 'SKILL.md');
 
 test('the packaged skill is a skill both agents can read', () => {
-  const head = fs.readFileSync(path.join(sourceDir(), 'SKILL.md'), 'utf8').split('---')[1];
+  // a Windows checkout carries CRLF, which neither agent minds and this test should not either
+  const head = fs.readFileSync(path.join(sourceDir(), 'SKILL.md'), 'utf8').replace(/\r\n/g, '\n').split('---')[1];
   assert.match(head, /\nname: pdfpin\n/);
   assert.match(head, /\ndescription: .+/);
 });
