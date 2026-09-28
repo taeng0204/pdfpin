@@ -33,9 +33,9 @@ passages with short notes; the human sees them live in the viewer's side panel.
      "title": "Evidence that the method beats the baseline",
      "flow": "Two lines of evidence: coverage (1) and bugs (2). Caveat: (3) shows the approximation.",
      "highlights": [
-       {"text": "exact sentence from the PDF", "note": "Headline result, +8.6% coverage", "color": "green", "tag": "coverage"},
-       {"text": "exact sentence from the PDF", "note": "40 bugs on 22 binaries", "color": "pink", "tag": "bugs", "page": 2},
-       {"text": "exact sentence from the PDF", "note": "Approximate constraints, no SMT", "color": "blue", "tag": "caveat"}
+       {"text": "exact sentence from the PDF", "note": "Headline result, +8.6% coverage", "tag": "coverage"},
+       {"text": "exact sentence from the PDF", "note": "40 bugs on 22 binaries", "tag": "bugs", "page": 2},
+       {"text": "exact sentence from the PDF", "note": "Approximate constraints, no SMT", "tag": "caveat"}
      ]}'
    ```
    Output: the session id, one line per highlight, and `N added, M failed`. Failed quotes come with
