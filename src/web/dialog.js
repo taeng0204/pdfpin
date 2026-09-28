@@ -1,5 +1,33 @@
 // Minimal confirm dialog: returns a Promise<boolean>. Enter confirms, Esc cancels, focus stays inside.
 import { t } from './i18n.js';
+import { COLORS } from './state.js';
+
+/**
+ * A small palette anchored to `anchor`. Resolves to a colour name, null for "back to automatic",
+ * or undefined when dismissed.
+ */
+export function pickColor(anchor, current) {
+  return new Promise((resolve) => {
+    document.querySelector('.color-pick')?.remove();
+    const el = document.createElement('div');
+    el.className = 'popover color-pick';
+    el.innerHTML = `<div class="swatches">${COLORS.map((c) => `<button class="color-dot hl-color-${c}${c === current ? ' on' : ''}" data-color="${c}" title="${c}"></button>`).join('')}</div><button class="pick-auto"></button>`;
+    el.querySelector('.pick-auto').textContent = t('color.auto');
+    document.body.appendChild(el);
+    const r = anchor.getBoundingClientRect();
+    el.style.top = `${Math.min(r.bottom + 6, window.innerHeight - el.offsetHeight - 8)}px`;
+    el.style.left = `${Math.max(8, Math.min(r.left - 8, window.innerWidth - el.offsetWidth - 8))}px`;
+    const done = (v) => { el.remove(); document.removeEventListener('mousedown', away, true); document.removeEventListener('keydown', esc, true); resolve(v); };
+    const away = (e) => { if (!el.contains(e.target)) done(undefined); };
+    const esc = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(undefined); } };
+    setTimeout(() => { document.addEventListener('mousedown', away, true); document.addEventListener('keydown', esc, true); }, 0);
+    el.addEventListener('click', (e) => {
+      const dot = e.target.closest('.color-dot');
+      if (dot) return done(dot.dataset.color);
+      if (e.target.closest('.pick-auto')) return done(null);
+    });
+  });
+}
 
 export function confirmDialog({ title, body = '', confirmText, cancelText, danger = false }) {
   confirmText ??= t('common.ok');

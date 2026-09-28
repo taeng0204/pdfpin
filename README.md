@@ -55,7 +55,9 @@ pdfpin status · pdfpin stop
 - History panel at `⌘J` / `Ctrl+J` and Documents drawer at `⌘D` / `Ctrl+D`, both rebindable.
 - Documents drawer (`⌘D`, `l`, or the library button): every PDF opened so far with its note count, tags and
   latest session; click one to open it instantly (it also becomes the CLI's current document).
-- Twelve highlight colours; a tag keeps one colour across a document and a new tag takes the next free one.
+- Twelve highlight colours. Colour follows the tag by default, or the session if you prefer one colour
+  per question (`⌘,` → Colour highlights by). Click the dot beside a group to repaint that tag or session;
+  a colour the agent asked for by name is never repainted.
 
 ## How it works
 

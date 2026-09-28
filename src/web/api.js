@@ -32,4 +32,5 @@ export const docApi = (id) => ({
   addSession: (spec) => api('POST', `/api/docs/${id}/sessions`, spec),
   updateSession: (sid, patch) => api('PATCH', `/api/docs/${id}/sessions/${sid}`, patch),
   removeSession: (sid) => api('DELETE', `/api/docs/${id}/sessions/${sid}`),
+  setColors: (patch) => api('PATCH', `/api/docs/${id}/colors`, patch),
 });

@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { COLORS } from './palette.js';
 
 const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
 
@@ -63,6 +64,12 @@ export class Store {
     if (doc) {
       doc.sessions ??= [];
       doc.currentSessionId ??= null;
+      doc.tagColors ??= {};
+      doc.sessionColors ??= {};
+      // records written before colours were a rule: give them the fields the rule needs
+      doc.sessions.forEach((s, i) => { s.color ??= COLORS[i % COLORS.length]; });
+      // a highlight made by hand always carried a colour the reader picked, so it is never automatic
+      doc.annotations.forEach((a) => { a.colorAuto ??= a.source !== 'user'; });
       this.cache.set(id, doc);
     }
     return doc;
@@ -137,10 +144,12 @@ export class Store {
     const now = new Date().toISOString();
     let doc = this.get(id);
     if (!doc) {
-      doc = { id, path: filePath, title: title || path.basename(filePath), pages, createdAt: now, openedAt: now, sessions: [], currentSessionId: null, annotations: [] };
+      doc = { id, path: filePath, title: title || path.basename(filePath), pages, createdAt: now, openedAt: now, sessions: [], currentSessionId: null, tagColors: {}, sessionColors: {}, annotations: [] };
     } else {
       doc.sessions ??= [];
       doc.currentSessionId ??= null;
+      doc.tagColors ??= {};
+      doc.sessionColors ??= {};
       doc.openedAt = now;
       if (title) doc.title = title;
       if (pages) doc.pages = pages;
@@ -163,6 +172,7 @@ export class Store {
       color: fields.color ?? 'yellow',
       tag: fields.tag ?? '',
       source: fields.source ?? 'agent',
+      colorAuto: fields.colorAuto ?? true,
       sessionId: fields.sessionId ?? null,
       anchor: fields.anchor ?? null,
       rects: fields.rects ?? [],
@@ -181,7 +191,7 @@ export class Store {
     if (!doc) return null;
     const ann = doc.annotations.find((a) => a.id === annId);
     if (!ann) return null;
-    for (const k of ['note', 'title', 'color', 'tag', 'rects', 'rectsSource', 'quote', 'sessionId']) {
+    for (const k of ['note', 'title', 'color', 'tag', 'rects', 'rectsSource', 'quote', 'sessionId', 'colorAuto']) {
       if (patch[k] !== undefined) ann[k] = patch[k];
     }
     ann.updatedAt = new Date().toISOString();
@@ -216,6 +226,7 @@ export class Store {
     const now = new Date().toISOString();
     const session = {
       id: shortId('s'),
+      color: fields.color ?? 'yellow',
       title: fields.title ?? '',
       flow: fields.flow ?? '',
       source: fields.source ?? 'agent',
@@ -236,7 +247,7 @@ export class Store {
     const doc = this.get(docId);
     const session = doc?.sessions.find((s) => s.id === sessionId);
     if (!session) return null;
-    for (const k of ['title', 'flow']) if (patch[k] !== undefined) session[k] = patch[k];
+    for (const k of ['title', 'flow', 'color']) if (patch[k] !== undefined) session[k] = patch[k];
     session.updatedAt = new Date().toISOString();
     this._save(doc);
     return session;
@@ -252,6 +263,16 @@ export class Store {
     if (doc.currentSessionId === sessionId) doc.currentSessionId = doc.sessions.length ? doc.sessions[doc.sessions.length - 1].id : null;
     this._save(doc);
     return before - doc.annotations.length;
+  }
+
+  /** Replace the document's colour overrides. A null value drops that override. */
+  setColorOverrides(docId, { tags, sessions }) {
+    const doc = this.get(docId);
+    if (!doc) return null;
+    for (const [k, v] of Object.entries(tags ?? {})) { if (v === null) delete doc.tagColors[k]; else doc.tagColors[k] = v; }
+    for (const [k, v] of Object.entries(sessions ?? {})) { if (v === null) delete doc.sessionColors[k]; else doc.sessionColors[k] = v; }
+    this._save(doc);
+    return doc;
   }
 
   setCurrentSession(docId, sessionId) {

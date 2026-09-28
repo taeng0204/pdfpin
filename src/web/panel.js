@@ -4,12 +4,13 @@ import { state, on, emit, select, visibleAnnotations, orderedAnnotations, sessio
 import { renderMarkdown } from './markdown.js';
 import { icons } from './icons.js';
 import { toast } from './toast.js';
-import { confirmDialog } from './dialog.js';
+import { confirmDialog, pickColor } from './dialog.js';
 import { t } from './i18n.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const LOOSE_ID = '__yours';
+const colorBy = () => state.settings?.colorBy ?? 'tag';
 
 export function initPanel({ docApi, viewer, highlights }) {
   const cardsEl = document.getElementById('cards');
@@ -101,7 +102,8 @@ export function initPanel({ docApi, viewer, highlights }) {
     const folded = state.collapsed.has(id) && !hasFilter();
     sec.className = `session${folded ? ' collapsed' : ''} ${classes}`.trim();
     sec.dataset.session = id;
-    const dots = [...new Set(dotColors)].map((c) => `<span class="mini-dot hl-color-${c}"></span>`).join('');
+    const byColor = colorBy() === 'session' && id !== LOOSE_ID;
+    const dots = [...new Set(dotColors)].map((c) => `<span class="mini-dot hl-color-${c}${byColor ? ' clickable' : ''}"${byColor ? ` title="${t('color.change')}"` : ''}></span>`).join('');
     sec.innerHTML = `
       <div class="session-head" role="button" tabindex="0" aria-expanded="${!folded}">
         <div class="session-main">
@@ -131,7 +133,9 @@ export function initPanel({ docApi, viewer, highlights }) {
       const wrap = document.createElement('div');
       wrap.className = 'group';
       if (labelled) {
-        wrap.innerHTML = `<div class="group-head"><span class="mini-dot hl-color-${g.color}"></span><span class="group-name"></span><span class="rule"></span><span>${g.items.length}</span></div>`;
+        const tag = g.items[0].tag || '';
+        const clickable = tag && colorBy() === 'tag';
+        wrap.innerHTML = `<div class="group-head"><span class="mini-dot hl-color-${g.color}${clickable ? ' clickable' : ''}"${clickable ? ` data-tag="${esc(tag)}" title="${t('color.change')}"` : ''}></span><span class="group-name"></span><span class="rule"></span><span>${g.items.length}</span></div>`;
         wrap.querySelector('.group-name').textContent = g.label;
       }
       g.items.forEach((a) => wrap.appendChild(card(a, index.get(a.id))));
@@ -275,6 +279,18 @@ export function initPanel({ docApi, viewer, highlights }) {
   }
 
   cardsEl.addEventListener('click', async (e) => {
+    const dot = e.target.closest('.mini-dot.clickable');
+    if (dot) {
+      e.stopPropagation();
+      const tag = dot.dataset.tag;
+      const sid = dot.closest('.session')?.dataset.session;
+      const current = tag ? state.doc?.tagColors?.[tag] : state.doc?.sessionColors?.[sid];
+      const picked = await pickColor(dot, current);
+      if (picked === undefined) return;
+      try { await docApi.setColors(tag ? { tags: { [tag]: picked } } : { sessions: { [sid]: picked } }); }
+      catch (err) { toast(err.message, { error: true }); }
+      return;
+    }
     const head = e.target.closest('.session-head');
     if (head) {
       const sec = head.closest('.session');

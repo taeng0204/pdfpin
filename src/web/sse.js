@@ -7,8 +7,10 @@ export function connectEvents(docId, handlers, onState) {
     onState('connecting');
     es.onopen = () => { onState('open'); if (wasConnected) handlers.resync?.(); wasConnected = true; };
     es.onerror = () => onState(es.readyState === EventSource.CLOSED ? 'error' : 'connecting');
-    for (const name of ['annotation.added', 'annotation.updated', 'annotation.removed', 'annotations.cleared', 'summary.updated', 'focus', 'doc.reloaded', 'doc.removed', 'docs.changed', 'session.added', 'session.updated', 'session.removed', 'session.current']) {
-      es.addEventListener(name, (e) => { try { handlers[name]?.(JSON.parse(e.data)); } catch (err) { console.error(name, err); } });
+    // Subscribe to exactly what the caller handles, so a new event never needs a second edit here.
+    for (const name of Object.keys(handlers)) {
+      if (name === 'resync') continue;
+      es.addEventListener(name, (e) => { try { handlers[name](JSON.parse(e.data)); } catch (err) { console.error(name, err); } });
     }
   };
   open();

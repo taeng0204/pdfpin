@@ -153,20 +153,88 @@ export class DocManager {
     return spec.sessionId;
   }
 
-  /**
-   * The colour of a highlight. An explicit colour always wins; otherwise a tag keeps the colour it
-   * already has in this document, and a new tag takes the next unused one from the palette.
-   */
+  _palette() {
+    const p = this.settings?.get().palette;
+    return p?.length ? p : COLORS;
+  }
+
+  /** The colour a tag gets when nobody has said otherwise: its position among the document's tags. */
+  _autoTagColor(fresh, tag) {
+    if (!tag) return this._palette()[0];
+    if (fresh.tagColors[tag]) return fresh.tagColors[tag];
+    const order = [];
+    for (const a of fresh.annotations) if (a.tag && !order.includes(a.tag)) order.push(a.tag);
+    const i = order.indexOf(tag);
+    const palette = this._palette();
+    return palette[(i < 0 ? order.length : i) % palette.length];
+  }
+
+  _sessionColor(fresh, sessionId) {
+    if (!sessionId) return null;
+    if (fresh.sessionColors[sessionId]) return fresh.sessionColors[sessionId];
+    return fresh.sessions.find((s) => s.id === sessionId)?.color ?? null;
+  }
+
+  /** Where an automatic colour comes from: the session it belongs to, or its tag. */
+  _autoColor(fresh, { tag, sessionId }) {
+    if ((this.settings?.get().colorBy ?? 'tag') === 'session') {
+      const c = this._sessionColor(fresh, sessionId);
+      if (c) return c;
+    }
+    return this._autoTagColor(fresh, (tag ?? '').trim());
+  }
+
+  /** The colour for a new highlight, plus whether it was chosen for us. */
   _colorFor(doc, spec) {
-    if (spec.color) return spec.color;
-    const tag = (spec.tag ?? '').trim();
-    if (!tag) return 'yellow';
-    const anns = this.store.get(doc.id)?.annotations ?? [];
-    const same = anns.find((a) => a.tag === tag && a.color);
-    if (same) return same.color;
-    const palette = this.settings?.get().palette ?? COLORS;
-    const taken = new Set(anns.filter((a) => a.tag).map((a) => a.color));
-    return palette.find((c) => !taken.has(c)) ?? palette[taken.size % palette.length];
+    const fresh = this.store.get(doc.id);
+    if (spec.color) return { color: spec.color, colorAuto: false };
+    return { color: this._autoColor(fresh, { tag: spec.tag, sessionId: spec.sessionId }), colorAuto: true };
+  }
+
+  /** The colour a new session takes: the first one no other session in this document is using. */
+  _freshSessionColor(fresh) {
+    const palette = this._palette();
+    const taken = new Set(fresh.sessions.map((s) => s.color));
+    return palette.find((c) => !taken.has(c)) ?? palette[fresh.sessions.length % palette.length];
+  }
+
+  /**
+   * Repaint every highlight whose colour was assigned automatically. Colours the agent or the
+   * reader chose by hand keep theirs. Returns the annotations that actually changed.
+   */
+  recolor(doc) {
+    const fresh = this.store.get(doc.id);
+    if (!fresh) return [];
+    const changed = [];
+    for (const a of fresh.annotations) {
+      if (!a.colorAuto) continue;
+      const next = this._autoColor(fresh, a);
+      if (next && next !== a.color) { a.color = next; changed.push(a); }
+    }
+    if (changed.length) {
+      this.store._save(fresh);
+      this.hub.broadcast(doc.id, 'annotations.recolored', { annotations: fresh.annotations });
+    }
+    return changed;
+  }
+
+  /** Recolour every document; used when a rule that applies everywhere changes. */
+  recolorAll() {
+    for (const row of this.store.list()) this.recolor({ id: row.id });
+  }
+
+  setColors(doc, { tags, sessions }) {
+    const fresh = this.store.get(doc.id);
+    for (const [k, v] of Object.entries({ ...tags, ...sessions })) {
+      if (v !== null && !COLORS.includes(v)) throw new ApiError(400, `Unknown colour "${v}". Choose from: ${COLORS.join(', ')}`);
+    }
+    for (const id of Object.keys(sessions ?? {})) {
+      if (!fresh.sessions.some((s) => s.id === id)) throw new ApiError(404, `Session ${id} not found`);
+    }
+    const updated = this.store.setColorOverrides(doc.id, { tags, sessions });
+    this.recolor(doc);
+    this.hub.broadcast(doc.id, 'colors.changed', { tagColors: updated.tagColors, sessionColors: updated.sessionColors });
+    return this.store.get(doc.id);
   }
 
   _validateCommon(spec) {
@@ -197,11 +265,11 @@ export class DocManager {
     }
     const pdf = await this.pdf(doc);
     const sessionId = this._sessionFor(doc, spec);
-    const color = this._colorFor(doc, spec);
+    const { color, colorAuto } = this._colorFor(doc, { ...spec, sessionId });
     const create = async (h) => {
       const idx = await getPageIndex(pdf, h.page);
       const ann = this.store.addAnnotation(doc.id, {
-        page: h.page, quote: h.quote, note: spec.note ?? '', title: spec.title ?? '', color, tag: spec.tag ?? '',
+        page: h.page, quote: h.quote, note: spec.note ?? '', title: spec.title ?? '', color, colorAuto, tag: spec.tag ?? '',
         anchor: h.anchor, rects: approxRects(idx, h.anchor), rectsSource: 'approx', score: h.score, source: spec.source === 'user' ? 'user' : 'agent', sessionId,
       });
       this.hub.broadcast(doc.id, 'annotation.added', { annotation: ann });
@@ -231,7 +299,7 @@ export class DocManager {
     // people highlighting by hand are not part of an agent session unless they say so
     const sessionId = this._sessionFor(doc, { ...spec, sessionId: spec.sessionId === undefined ? null : spec.sessionId });
     const ann = this.store.addAnnotation(doc.id, {
-      page, quote: spec.quote ?? collapse(idx.text.slice(start, end)), note: spec.note ?? '', title: spec.title ?? '', color: this._colorFor(doc, spec), tag: spec.tag ?? '',
+      page, quote: spec.quote ?? collapse(idx.text.slice(start, end)), note: spec.note ?? '', title: spec.title ?? '', ...this._colorFor(doc, { ...spec, sessionId }), tag: spec.tag ?? '',
       anchor: a, rects: rects ?? approxRects(idx, a), rectsSource: rects ? 'dom' : 'approx', score: 1, source: spec.source ?? 'user', sessionId,
     });
     this.hub.broadcast(doc.id, 'annotation.added', { annotation: ann });
@@ -245,7 +313,7 @@ export class DocManager {
     const rects = cleanRects(spec.rects);
     const sessionId = this._sessionFor(doc, spec);
     const ann = this.store.addAnnotation(doc.id, {
-      page, quote: spec.quote ?? '', note: spec.note ?? '', title: spec.title ?? '', color: this._colorFor(doc, spec), tag: spec.tag ?? '',
+      page, quote: spec.quote ?? '', note: spec.note ?? '', title: spec.title ?? '', ...this._colorFor(doc, { ...spec, sessionId }), tag: spec.tag ?? '',
       anchor: null, rects, rectsSource: 'dom', score: 1, source: spec.source ?? 'agent', sessionId,
     });
     this.hub.broadcast(doc.id, 'annotation.added', { annotation: ann });
@@ -256,6 +324,7 @@ export class DocManager {
     this._validateCommon(patch);
     const clean = {};
     for (const k of ['note', 'title', 'color', 'tag', 'quote']) if (patch[k] !== undefined) clean[k] = patch[k];
+    if (patch.color !== undefined) clean.colorAuto = false;
     if (patch.sessionId !== undefined) clean.sessionId = this._sessionFor(doc, { sessionId: patch.sessionId });
     if (Array.isArray(patch.rects)) {
       clean.rects = cleanRects(patch.rects, { allowEmpty: true });
@@ -283,7 +352,8 @@ export class DocManager {
     if (!spec || typeof spec !== 'object') throw new ApiError(400, 'Session spec must be an object');
     for (const k of ['title', 'flow']) if (spec[k] !== undefined && spec[k] !== null && typeof spec[k] !== 'string') throw new ApiError(400, `"${k}" must be a string`);
     if (spec.highlights !== undefined && !Array.isArray(spec.highlights)) throw new ApiError(400, '"highlights" must be an array');
-    const session = this.store.addSession(doc.id, { title: spec.title ?? '', flow: spec.flow ?? '', source: spec.source === 'user' ? 'user' : 'agent' });
+    const color = this._freshSessionColor(this.store.get(doc.id));
+    const session = this.store.addSession(doc.id, { title: spec.title ?? '', flow: spec.flow ?? '', color, source: spec.source === 'user' ? 'user' : 'agent' });
     this.hub.broadcast(doc.id, 'session.added', { session });
     const results = [];
     for (const h of spec.highlights ?? []) {

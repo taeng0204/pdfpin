@@ -4,6 +4,7 @@ import path from 'node:path';
 import { COLORS } from './palette.js';
 
 export const LANGUAGES = ['auto', 'en', 'ko'];
+export const COLOR_BY = ['tag', 'session'];
 export const THEMES = ['system', 'light', 'dark'];
 
 export const DEFAULT_KEYS = {
@@ -24,6 +25,7 @@ export const DEFAULT_KEYS = {
 
 export const DEFAULT_SETTINGS = Object.freeze({
   language: 'auto',
+  colorBy: 'tag',
   theme: 'system',
   dimPages: true,
   zoom: 'fit-width',
@@ -44,6 +46,10 @@ export function mergeSettings(current, patch) {
       case 'language':
         if (!LANGUAGES.includes(v)) throw new SettingsError(`language must be one of: ${LANGUAGES.join(', ')}`);
         next.language = v;
+        break;
+      case 'colorBy':
+        if (!COLOR_BY.includes(v)) throw new SettingsError(`colorBy must be one of: ${COLOR_BY.join(', ')}`);
+        next.colorBy = v;
         break;
       case 'theme':
         if (!THEMES.includes(v)) throw new SettingsError(`theme must be one of: ${THEMES.join(', ')}`);

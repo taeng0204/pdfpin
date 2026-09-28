@@ -70,9 +70,10 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   const settings = new SettingsStore(home);
   const docs = new DocManager(store, hub, settings);
 
-  const saveSettings = (fn) => {
+  const saveSettings = (fn, recolor = false) => {
     let value;
     try { value = fn(); } catch (e) { throw e instanceof SettingsError ? new ApiError(400, e.message) : e; }
+    if (recolor) docs.recolorAll(); // the colour rule or the palette may have moved under every document
     hub.broadcastAll('settings.changed', { settings: value });
     return { settings: value };
   };
@@ -82,8 +83,8 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
 
   route('GET', '/api/health', () => ({ ok: true, version: VERSION, pid: process.pid, home }));
   route('GET', '/api/settings', () => ({ settings: settings.get() }));
-  route('PATCH', '/api/settings', ({ body }) => saveSettings(() => settings.update(body || {})));
-  route('DELETE', '/api/settings', () => saveSettings(() => settings.reset()));
+  route('PATCH', '/api/settings', ({ body }) => saveSettings(() => settings.update(body || {}), true));
+  route('DELETE', '/api/settings', () => saveSettings(() => settings.reset(), true));
   route('GET', '/api/docs', () => ({ docs: store.list() }));
   route('POST', '/api/docs', async ({ body }) => {
     if (!body?.path) throw new ApiError(400, '"path" is required');
@@ -94,6 +95,7 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   route('GET', '/api/docs/:id', ({ params }) => ({ doc: withUrls(docs.resolve(params.id)) }));
   route('POST', '/api/docs/:id/activate', ({ params }) => ({ doc: withUrls(docs.activate(docs.resolve(params.id))) }));
   route('POST', '/api/docs/:id/reveal', ({ params }) => docs.reveal(docs.resolve(params.id)));
+  route('PATCH', '/api/docs/:id/colors', ({ params, body }) => ({ doc: withUrls(docs.setColors(docs.resolve(params.id), body || {})) }));
   route('DELETE', '/api/docs/:id', async ({ params }) => { const d = docs.resolve(params.id); await docs.removeDocument(d); return { ok: true, removed: d.id }; });
   route('GET', '/api/docs/:id/file', ({ params, res }) => {
     const doc = docs.resolve(params.id);

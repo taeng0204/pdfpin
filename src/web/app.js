@@ -236,6 +236,8 @@ async function boot() {
     },
     'annotation.removed': ({ id }) => dropAnnotation(id),
     'annotations.cleared': () => resync(),
+    'annotations.recolored': async ({ annotations }) => { setAnnotations(annotations); await highlights.renderAll(); },
+    'colors.changed': () => resync(),
     'session.added': ({ session }) => {
       // a new interaction: fold the older ones so the latest reads like the top of a history
       for (const s of state.sessions) state.collapsed.add(s.id);

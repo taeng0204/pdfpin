@@ -138,6 +138,14 @@ export function openSettings() {
     );
     body.appendChild(look);
 
+    const rule = section(t('settings.palette'), t('settings.paletteHint'));
+    rule.querySelector('h3').textContent = t('settings.colorBy');
+    rule.querySelector('.set-hint').textContent = s.colorBy === 'session' ? t('settings.colorBySessionHint') : t('settings.colorByTagHint');
+    rule.querySelector('.set-rows').appendChild(
+      row(t('settings.colorBy'), select(s.colorBy, [['tag', t('settings.colorByTag')], ['session', t('settings.colorBySession')]], (v) => save({ colorBy: v }))),
+    );
+    body.appendChild(rule);
+
     const pal = section(t('settings.palette'), t('settings.paletteHint'));
     const grid = document.createElement('div');
     grid.className = 'set-palette';

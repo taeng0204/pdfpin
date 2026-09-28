@@ -460,3 +460,17 @@ mark.mk { color: inherit; background: color-mix(in srgb, var(--hl-color) calc(va
 
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms; animation-timing-function: cubic-bezier(.2,.7,.2,1); }
 @media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }
+
+/* a dot you can click is a control, so it says so */
+.mini-dot.clickable { cursor: pointer; transition: transform 100ms, box-shadow 100ms; }
+.mini-dot.clickable:hover { transform: scale(1.35); box-shadow: 0 0 0 3px var(--hover); }
+.color-pick { padding: 10px; display: grid; gap: 8px; justify-items: center; }
+.color-pick .swatches { grid-template-columns: repeat(6, 20px); }
+.color-pick .color-dot { width: 20px; height: 20px; opacity: 0.85; }
+.color-pick .color-dot:hover { opacity: 1; transform: scale(1.12); }
+.color-pick .color-dot.on { opacity: 1; box-shadow: 0 0 0 2px var(--ink); }
+.pick-auto { width: 100%; border: 1px solid var(--line); background: transparent; color: var(--ink-2); border-radius: 6px; padding: 5px 8px; font-size: 12.5px; cursor: pointer; }
+.pick-auto:hover { background: var(--hover); color: var(--ink); }
+/* a touch more room inside a highlight card */
+.card { padding: 11px 12px; }
+mark.mk { padding: 0.08em 0.22em; }
