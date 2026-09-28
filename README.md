@@ -45,6 +45,7 @@ pdfpin status · pdfpin stop
 - Search in the document (`⌘/Ctrl+F`), zoom (`⌘/Ctrl +/−/0`, ctrl+wheel), fit width / fit page.
 - Select text on a page → floating toolbar → highlight in a colour, optionally with a note.
 - Light / dark theme (`d`), dimmed pages in dark mode, hide highlights (`h`).
+- `←` / `→` turn one page; `n` / `p` step through highlights.
 - History panel (`⌘H` / `Ctrl+H`, or `t`) and Documents drawer (`⌘D` / `Ctrl+D`, or `l`).
   On macOS the system takes plain `⌘H`, so the History panel answers to `⌘⇧H`.
 - Documents drawer (`⌘D`, `l`, or the library button): every PDF opened so far with its note count, tags and
