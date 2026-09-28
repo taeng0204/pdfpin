@@ -40,6 +40,7 @@ const EN = {
   'panel.noMatch': 'Nothing matches the current filter.',
   'panel.yourHighlights': 'Your highlights',
   'panel.byHandCount': '{n} by hand',
+  'group.untagged': 'No tag',
 
   'session.untitled': 'Untitled session',
   'session.highlights': '{n} highlights',
@@ -143,7 +144,7 @@ const EN = {
   'settings.zoomFitWidth': 'Fit width',
   'settings.zoomFitPage': 'Fit page',
   'settings.palette': 'Palette',
-  'settings.paletteHint': 'A tag keeps one colour. New tags take the next enabled colour, in this order.',
+  'settings.paletteHint': 'Highlights are coloured by their tag. The first tag in a document takes the first colour below, the second tag the next one, and so on. Switch a colour off to skip it.',
   'settings.paletteEmpty': 'Keep at least one colour.',
   'settings.shortcuts': 'Shortcuts',
   'settings.shortcutsHint': 'Click a shortcut and press the new keys. Esc cancels.',
@@ -208,6 +209,7 @@ const KO = {
   'panel.noMatch': '조건에 맞는 항목이 없습니다.',
   'panel.yourHighlights': '직접 표시한 하이라이트',
   'panel.byHandCount': '직접 표시 {n}개',
+  'group.untagged': '태그 없음',
 
   'session.untitled': '제목 없는 세션',
   'session.highlights': '하이라이트 {n}개',
@@ -311,7 +313,7 @@ const KO = {
   'settings.zoomFitWidth': '너비 맞춤',
   'settings.zoomFitPage': '페이지 맞춤',
   'settings.palette': '팔레트',
-  'settings.paletteHint': '태그 하나가 색 하나를 계속 씁니다. 새 태그는 켜둔 색을 이 순서대로 받습니다.',
+  'settings.paletteHint': '하이라이트 색은 태그를 따라갑니다. 문서에서 처음 나온 태그가 아래 첫 번째 색을, 두 번째 태그가 그다음 색을 받습니다. 꺼둔 색은 건너뜁니다.',
   'settings.paletteEmpty': '색을 하나 이상 켜두세요.',
   'settings.shortcuts': '단축키',
   'settings.shortcutsHint': '단축키를 누른 뒤 새 키 조합을 입력하세요. Esc로 취소합니다.',

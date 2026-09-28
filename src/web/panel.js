@@ -9,6 +9,8 @@ import { t } from './i18n.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+const LOOSE_ID = '__yours';
+
 export function initPanel({ docApi, viewer, highlights }) {
   const cardsEl = document.getElementById('cards');
   const countEl = document.getElementById('ann-count');
@@ -66,75 +68,98 @@ export function initPanel({ docApi, viewer, highlights }) {
     const q = state.filter.text.trim().toLowerCase();
     const sessions = [...state.sessions].reverse();
     let shown = 0;
-    sessions.forEach((s, i) => {
+    sessions.forEach((s) => {
       const items = orderedAnnotations().filter((a) => a.sessionId === s.id);
       const seen = items.filter((a) => visibleIds.has(a.id));
       const textHit = q && `${s.title} ${s.flow}`.toLowerCase().includes(q);
       if (state.filter.session && state.filter.session !== s.id) return;
       if (hasFilter() && !seen.length && !textHit) return;
       shown++;
-      cardsEl.appendChild(sessionEl(s, items, hasFilter() ? (textHit ? items : seen) : items, i));
+      cardsEl.appendChild(sessionEl(s, items, hasFilter() ? (textHit ? items : seen) : items));
     });
-    const loose = orderedAnnotations().filter((a) => !sessionOf(a)).filter((a) => visibleIds.has(a.id));
+    const allLoose = orderedAnnotations().filter((a) => !sessionOf(a));
+    const loose = allLoose.filter((a) => visibleIds.has(a.id));
     if (loose.length && !state.filter.session) {
       shown++;
-      const sec = document.createElement('section');
-      sec.className = 'session loose';
-      sec.innerHTML = `<div class="session-head static"><div class="session-title">${t('panel.yourHighlights')}</div><div class="session-meta">${t('panel.byHandCount', { n: loose.length })}</div></div><div class="session-body"></div>`;
-      const body = sec.querySelector('.session-body');
-      loose.forEach((a) => body.appendChild(card(a, null)));
+      const sec = foldable({
+        id: LOOSE_ID,
+        title: t('panel.yourHighlights'),
+        metaHtml: `<span>${t('panel.byHandCount', { n: allLoose.length })}</span>`,
+        actionsHtml: '',
+        dotColors: allLoose.map((a) => a.color),
+        classes: 'loose',
+      });
+      fillGroups(sec, allLoose, loose);
       cardsEl.appendChild(sec);
     }
     if (!shown) cardsEl.innerHTML = `<div class="empty">${t('panel.noMatch')}</div>`;
   }
 
-  function sessionEl(s, items, shownItems, i) {
+  /** A collapsible section: one agent session, or the reader's own highlights. */
+  function foldable({ id, title, metaHtml, actionsHtml, extra = '', dotColors, classes = '' }) {
     const sec = document.createElement('section');
-    const folded = state.collapsed.has(s.id) && !hasFilter();
-    sec.className = `session${folded ? ' collapsed' : ''}${s.id === state.currentSessionId ? ' current' : ''}${state.filter.session === s.id ? ' focused' : ''}`;
-    sec.dataset.session = s.id;
-    sec.style.animationDelay = `${Math.min(i, 6) * 40}ms`;
-    const dots = [...new Set(items.map((a) => a.color))].map((c) => `<span class="mini-dot hl-color-${c}"></span>`).join('');
+    const folded = state.collapsed.has(id) && !hasFilter();
+    sec.className = `session${folded ? ' collapsed' : ''} ${classes}`.trim();
+    sec.dataset.session = id;
+    const dots = [...new Set(dotColors)].map((c) => `<span class="mini-dot hl-color-${c}"></span>`).join('');
     sec.innerHTML = `
       <div class="session-head" role="button" tabindex="0" aria-expanded="${!folded}">
-        <span class="chev">${icons.chevron}</span>
         <div class="session-main">
           <div class="session-title"></div>
-          <div class="session-meta"><span class="dots">${dots}</span><span>${t('session.highlights', { n: items.length })}</span><span>·</span><span title="${esc(s.createdAt)}">${relative(s.createdAt)}</span>${s.id === state.currentSessionId ? `<span class="cur">${t('session.current')}</span>` : ''}${s.source === 'user' ? `<span>· ${t('session.byHand')}</span>` : ''}</div>
+          <div class="session-meta"><span class="dots">${dots}</span>${metaHtml}</div>
         </div>
-        <span class="session-actions">
-          <button class="icon-btn act-focus" title="${t('session.focus')}" aria-pressed="${state.filter.session === s.id}">${icons.eye}</button>
-          <button class="icon-btn act-sedit" title="${t('session.edit')}">${icons.edit}</button>
-          <button class="icon-btn act-sdel" title="${t('session.delete')}">${icons.trash}</button>
-          <span class="icon-btn fold" aria-hidden="true">${icons.chevron}</span>
-        </span>
+        <span class="session-actions">${actionsHtml}<span class="icon-btn fold" aria-hidden="true">${icons.chevron}</span></span>
       </div>
-      <div class="session-body">
-        <div class="session-flow md"></div>
-        <div class="session-groups"></div>
-      </div>`;
-    sec.querySelector('.session-title').textContent = s.title || t('session.untitled');
-    const flow = sec.querySelector('.session-flow');
-    if (s.flow) flow.innerHTML = renderMarkdown(s.flow); else flow.remove();
-    if (editingSession === s.id) openSessionEditor(sec, s);
+      <div class="session-fold"><div class="session-clip"><div class="session-body">${extra}<div class="session-groups"></div></div></div></div>`;
+    sec.querySelector('.session-title').textContent = title;
+    return sec;
+  }
 
-    // groups by tag (colour when untagged), highlights numbered by creation order within the session
+  /** Highlights split by tag, or by colour when they carry no tag. Headings appear only when they help. */
+  function fillGroups(sec, items, shownItems) {
     const index = new Map(items.map((a, k) => [a.id, k + 1]));
     const groups = new Map();
     for (const a of shownItems) {
-      const key = a.tag ? `#${a.tag}` : a.color;
-      if (!groups.has(key)) groups.set(key, { color: a.color, items: [] });
+      // tags are the topic; highlights made by hand carry none, so their colour stands in for one
+      const key = a.tag ? `#${a.tag}` : `:${a.color}`;
+      if (!groups.has(key)) groups.set(key, { color: a.color, label: a.tag || a.color, items: [] });
       groups.get(key).items.push(a);
     }
     const gEl = sec.querySelector('.session-groups');
-    for (const [key, g] of groups) {
+    const labelled = groups.size > 1 || [...groups.values()].some((g) => g.items[0].tag);
+    for (const [, g] of groups) {
       const wrap = document.createElement('div');
       wrap.className = 'group';
-      wrap.innerHTML = `<div class="group-head"><span class="mini-dot hl-color-${g.color}"></span><span class="group-name"></span><span class="rule"></span><span>${g.items.length}</span></div>`;
-      wrap.querySelector('.group-name').textContent = key;
+      if (labelled) {
+        wrap.innerHTML = `<div class="group-head"><span class="mini-dot hl-color-${g.color}"></span><span class="group-name"></span><span class="rule"></span><span>${g.items.length}</span></div>`;
+        wrap.querySelector('.group-name').textContent = g.label;
+      }
       g.items.forEach((a) => wrap.appendChild(card(a, index.get(a.id))));
       gEl.appendChild(wrap);
     }
+  }
+
+  function sessionEl(s, items, shownItems) {
+    const meta = `<span>${t('session.highlights', { n: items.length })}</span><span>·</span><span title="${esc(s.createdAt)}">${relative(s.createdAt)}</span>`
+      + (s.id === state.currentSessionId ? `<span class="cur">${t('session.current')}</span>` : '')
+      + (s.source === 'user' ? `<span>· ${t('session.byHand')}</span>` : '');
+    const actions = `
+      <button class="icon-btn act-focus" title="${t('session.focus')}" aria-pressed="${state.filter.session === s.id}">${icons.eye}</button>
+      <button class="icon-btn act-sedit" title="${t('session.edit')}">${icons.edit}</button>
+      <button class="icon-btn act-sdel" title="${t('session.delete')}">${icons.trash}</button>`;
+    const sec = foldable({
+      id: s.id,
+      title: s.title || t('session.untitled'),
+      metaHtml: meta,
+      actionsHtml: actions,
+      extra: '<div class="session-flow md"></div>',
+      dotColors: items.map((a) => a.color),
+      classes: `${s.id === state.currentSessionId ? 'current' : ''} ${state.filter.session === s.id ? 'focused' : ''}`,
+    });
+    const flow = sec.querySelector('.session-flow');
+    if (s.flow) flow.innerHTML = renderMarkdown(s.flow); else flow.remove();
+    if (editingSession === s.id) openSessionEditor(sec, s);
+    fillGroups(sec, items, shownItems);
     return sec;
   }
 
@@ -250,16 +275,16 @@ export function initPanel({ docApi, viewer, highlights }) {
   }
 
   cardsEl.addEventListener('click', async (e) => {
-    const head = e.target.closest('.session-head:not(.static)');
+    const head = e.target.closest('.session-head');
     if (head) {
       const sec = head.closest('.session');
       const s = state.sessions.find((x) => x.id === sec.dataset.session);
-      if (!s) return;
-      if (e.target.closest('.act-focus')) { focusSession(s.id); return; }
-      if (e.target.closest('.act-sedit')) { openSessionEditor(sec, s); return; }
-      if (e.target.closest('.act-sdel')) { deleteSession(s); return; }
-      if (state.collapsed.has(s.id)) state.collapsed.delete(s.id); else state.collapsed.add(s.id);
-      renderCards();
+      if (s) {
+        if (e.target.closest('.act-focus')) { focusSession(s.id); return; }
+        if (e.target.closest('.act-sedit')) { openSessionEditor(sec, s); return; }
+        if (e.target.closest('.act-sdel')) { deleteSession(s); return; }
+      }
+      toggleFold(sec);
       return;
     }
     const el = e.target.closest('.card');
@@ -279,6 +304,15 @@ export function initPanel({ docApi, viewer, highlights }) {
     const el = e.target.closest('.card');
     if (el && e.key === 'Enter') select(el.dataset.id, { from: 'panel' });
   });
+
+  /** Fold in place so the section can animate; a re-render would snap it open or shut. */
+  function toggleFold(sec) {
+    const id = sec.dataset.session;
+    const folding = !sec.classList.contains('collapsed');
+    if (folding) state.collapsed.add(id); else state.collapsed.delete(id);
+    sec.classList.toggle('collapsed', folding);
+    sec.querySelector('.session-head').setAttribute('aria-expanded', String(!folding));
+  }
 
   async function copyCitation(a) {
     const title = state.doc?.title || 'document';

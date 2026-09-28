@@ -9,7 +9,8 @@ import { toast } from './toast.js';
 const ACTIONS = ['documents', 'history', 'settings', 'search', 'nextPage', 'prevPage', 'nextHighlight', 'prevHighlight', 'zoomIn', 'zoomOut', 'zoomReset', 'theme', 'toggleHighlights'];
 
 export function openSettings() {
-  if (document.querySelector('.settings-root')) return;
+  const existing = document.querySelector('.settings-root');
+  if (existing) { existing.querySelector('.set-close').click(); return; } // same button opens and closes
   const root = document.createElement('div');
   root.className = 'dialog-root settings-root';
   root.innerHTML = `

@@ -148,11 +148,19 @@ async function boot() {
     toggleHighlights() { app.classList.toggle('hide-highlights'); },
     openSettings,
   };
+  let themeShiftTimer = null;
   function applySettings() {
-    const change = () => { setLanguage(state.settings?.language); applyTheme(); applyStrings(); panel.renderAll(); };
-    // A theme flip repaints everything, so cross-fade it when the browser can.
-    if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(change);
-    else change();
+    const before = state.theme;
+    setLanguage(state.settings?.language);
+    applyTheme();
+    applyStrings();
+    panel.renderAll();
+    // Fade the colours rather than snapping to them. A class, not a page snapshot, so long PDFs stay smooth.
+    if (state.theme !== before && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      root.classList.add('theme-shift');
+      clearTimeout(themeShiftTimer);
+      themeShiftTimer = setTimeout(() => root.classList.remove('theme-shift'), 320);
+    }
   }
   on('settings', applySettings);
   initKeys({ viewer, search, ui });
