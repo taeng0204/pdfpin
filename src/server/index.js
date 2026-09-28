@@ -9,6 +9,7 @@ import { Store } from './store.js';
 import { SseHub } from './sse.js';
 import { DocManager, ApiError } from './docs.js';
 import { SettingsStore, SettingsError } from './settings.js';
+import { lockHome } from './lock.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.join(__dirname, '..', 'web');
@@ -79,34 +80,6 @@ function readBody(req, limit = 5 * 1024 * 1024) {
  * Claim a home directory for this process. Two daemons sharing one home would each cache documents
  * and overwrite the other's writes, so the second one must not start.
  */
-const claimedHomes = new Set(); // two Stores in one process would clobber each other just as badly
-
-function lockHome(home) {
-  const key = path.resolve(home);
-  if (claimedHomes.has(key)) throw new Error(`This process already owns ${home}`);
-  const file = path.join(home, 'daemon.lock');
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      fs.writeFileSync(file, String(process.pid), { flag: 'wx' });
-      claimedHomes.add(key);
-      return () => {
-        claimedHomes.delete(key);
-        try { if (fs.readFileSync(file, 'utf8') === String(process.pid)) fs.unlinkSync(file); } catch { /* gone already */ }
-      };
-    } catch (e) {
-      if (e.code !== 'EEXIST') throw e;
-      const owner = Number(fs.readFileSync(file, 'utf8').trim());
-      if (owner && owner !== process.pid && isAlive(owner)) throw new Error(`Another pdfpin daemon (pid ${owner}) already owns ${home}`);
-      try { fs.unlinkSync(file); } catch { /* raced with its owner exiting */ }
-    }
-  }
-  throw new Error(`Could not claim ${home}`);
-}
-
-function isAlive(pid) {
-  try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
-}
-
 export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, host = '127.0.0.1', onShutdown = null, lock = false } = {}) {
   fs.mkdirSync(home, { recursive: true });
   const releaseLock = lock ? lockHome(home) : () => {};

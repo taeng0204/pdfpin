@@ -2,6 +2,7 @@
 // for the pages near the viewport and released again when they scroll away.
 import { textItems, buildPageText } from '/shared/pagetext.js';
 import { state, emit } from './state.js';
+import { t } from './i18n.js';
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
 const GAP = 22;
@@ -136,35 +137,62 @@ async function renderCanvas(v, ps) {
   if (ps.rendered === key || ps.rendering === key) return;
   if (ps.renderTask) { ps.renderTask.cancel(); ps.renderTask = null; }
   ps.rendering = key;
-  const vp = ps.page.getViewport({ scale: scale * dpr });
-  const maxDim = 8192;
-  const clamp = Math.min(1, maxDim / Math.max(vp.width, vp.height));
-  const rvp = clamp < 1 ? ps.page.getViewport({ scale: scale * dpr * clamp }) : vp;
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.floor(rvp.width);
-  canvas.height = Math.floor(rvp.height);
-  const ctx = canvas.getContext('2d', { alpha: false });
-  const task = ps.page.render({ canvasContext: ctx, viewport: rvp });
-  ps.renderTask = task;
+  let task = null;
   try {
+    const vp = ps.page.getViewport({ scale: scale * dpr });
+    const maxDim = 8192;
+    const clamp = Math.min(1, maxDim / Math.max(vp.width, vp.height));
+    const rvp = clamp < 1 ? ps.page.getViewport({ scale: scale * dpr * clamp }) : vp;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(rvp.width);
+    canvas.height = Math.floor(rvp.height);
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) throw new Error('Could not get a 2D drawing context');
+    task = ps.page.render({ canvasContext: ctx, viewport: rvp });
+    ps.renderTask = task;
     await task.promise;
+
+    if (Math.abs(v.scale - scale) > 1e-6) return; // zoom changed meanwhile; a newer render is coming
+    if (!ps.visible) return;                      // scrolled far away while rendering; keep memory low
+    ps.canvas.replaceWith(canvas);
+    ps.canvas = canvas;
+    ps.rendered = key;
+    ps.el.classList.remove('unrendered');
+    clearRenderFailure(ps);
+    if (!v._firstPainted) { v._firstPainted = true; mark('first-page'); }
+    // fonts arrived with the canvas: relay out the text layer so the glyph boxes are exact
+    ensureFonts(v, ps).then(() => { if (ps.visible) ensureTextLayer(v, ps).catch(() => {}); });
   } catch (e) {
+    // anything at all: a cancelled task, a context we could not get, a canvas too big to allocate
     if (e?.name === 'RenderingCancelledException') return;
     console.error('render', ps.num, e);
-    return;
+    showRenderFailure(v, ps, e);
   } finally {
-    if (ps.renderTask === task) ps.renderTask = null;
+    if (task && ps.renderTask === task) ps.renderTask = null;
     if (ps.rendering === key) ps.rendering = null;
   }
-  if (Math.abs(v.scale - scale) > 1e-6) return; // zoom changed meanwhile; a newer render is on its way
-  if (!ps.visible) return; // scrolled far away while rendering; keep memory low
-  ps.canvas.replaceWith(canvas);
-  ps.canvas = canvas;
-  ps.rendered = key;
-  ps.el.classList.remove('unrendered');
-  if (!v._firstPainted) { v._firstPainted = true; mark('first-page'); }
-  // fonts arrived with the canvas: relay out the text layer so the glyph boxes are exact
-  ensureFonts(v, ps).then(() => { if (ps.visible) ensureTextLayer(v, ps).catch(() => {}); }); // fonts are loaded now; relayout the text layer once if it predates them
+}
+
+/** A page that will not draw says so in place, with a way to try again. */
+function showRenderFailure(v, ps, err) {
+  clearRenderFailure(ps);
+  ps.el.classList.add('render-failed');
+  const box = document.createElement('div');
+  box.className = 'page-error';
+  box.innerHTML = '<p></p><button class="btn"></button><p class="why"></p>';
+  box.querySelector('p').textContent = t('page.failed');
+  box.querySelector('.why').textContent = err?.message ? String(err.message).slice(0, 120) : '';
+  const retry = box.querySelector('button');
+  retry.textContent = t('page.retry');
+  retry.onclick = () => { clearRenderFailure(ps); ps.rendered = 0; ps.rendering = null; renderCanvas(v, ps); };
+  ps.el.appendChild(box);
+  ps.errorBox = box;
+}
+
+function clearRenderFailure(ps) {
+  ps.el.classList.remove('render-failed');
+  ps.errorBox?.remove();
+  ps.errorBox = null;
 }
 
 function releaseCanvas(ps) {

@@ -14,8 +14,14 @@
     "research",
     "paper"
   ],
-  "author": "Taein Lim",
+  "author": "Taein Lim (https://github.com/taeng0204)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/taeng0204/pdfpin.git"
+  },
+  "homepage": "https://github.com/taeng0204/pdfpin#readme",
+  "bugs": "https://github.com/taeng0204/pdfpin/issues",
   "type": "module",
   "bin": {
     "pdfpin": "bin/pdfpin.js"

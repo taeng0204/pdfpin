@@ -1,6 +1,8 @@
 // Viewer strings. `t(key, vars)` interpolates {name} and picks a plural form via {n}.
 const EN = {
   'app.loading': 'Opening document…',
+  'page.failed': 'This page could not be displayed.',
+  'page.retry': 'Try again',
   'welcome.title': 'Nothing open yet',
   'tour.start': 'Take the tour',
   'tour.invite': 'First time here? A two-minute tour shows how it works.',
@@ -253,6 +255,8 @@ const EN = {
 
 const KO = {
   'app.loading': '문서를 여는 중…',
+  'page.failed': '이 페이지를 표시하지 못했습니다.',
+  'page.retry': '다시 시도',
   'welcome.title': '아직 연 문서가 없습니다',
   'tour.start': '둘러보기',
   'tour.invite': '처음이신가요? 2분이면 사용법을 다 봅니다.',
