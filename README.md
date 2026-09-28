@@ -17,7 +17,7 @@ Node 22.13 or newer, on macOS, Windows or Linux. No native build step.
 pdf.js 6 sets that floor; nothing else here needs it.
 
 ```bash
-npm install -g pdfpin
+npm install -g @taeng0204/pdfpin
 pdfpin open paper.pdf
 ```
 
