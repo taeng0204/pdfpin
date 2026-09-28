@@ -236,6 +236,7 @@ export function initPanel({ docApi, viewer, highlights }) {
     editingSession = s.id;
     sec.classList.remove('collapsed');
     const body = sec.querySelector('.session-body');
+    body.querySelector('.session-editor')?.remove();
     const box = document.createElement('div');
     box.className = 'session-editor';
     box.innerHTML = `<input class="session-edit-title" placeholder="${t('session.titlePlaceholder')}"><textarea class="card-edit" placeholder="${t('session.flowPlaceholder')}"></textarea><div class="card-edit-row"><button class="btn act-scancel">${t('common.cancel')}</button><button class="btn primary act-ssave">${t('common.save')}</button></div>`;
@@ -329,7 +330,8 @@ export function initPanel({ docApi, viewer, highlights }) {
       const s = state.sessions.find((x) => x.id === sec.dataset.session);
       if (s) {
         if (e.target.closest('.act-focus')) { focusSession(s.id); return; }
-        if (e.target.closest('.act-sedit')) { openSessionEditor(sec, s); return; }
+        // go through a render so only one editor is ever open; clicking edit again keeps the draft
+        if (e.target.closest('.act-sedit')) { if (editingSession !== s.id) { editingSession = s.id; renderCards(); } return; }
         if (e.target.closest('.act-sarch')) { archiveSession(s); return; }
       }
       toggleFold(sec);
@@ -340,7 +342,7 @@ export function initPanel({ docApi, viewer, highlights }) {
     const a = state.annotations.get(el.dataset.id);
     if (!a) return;
     if (e.target.closest('.act-copy')) { e.stopPropagation(); copyCitation(a); return; }
-    if (e.target.closest('.act-edit')) { e.stopPropagation(); openEditor(el, a); return; }
+    if (e.target.closest('.act-edit')) { e.stopPropagation(); if (editingId !== a.id) { editingId = a.id; renderCards(); } return; }
     if (e.target.closest('.act-del')) { e.stopPropagation(); removeWithUndo(a); return; }
     if (e.target.closest('textarea, .card-edit-row')) return;
     select(a.id, { from: 'panel' });

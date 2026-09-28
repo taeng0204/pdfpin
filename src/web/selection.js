@@ -4,12 +4,26 @@ import { COLORS } from './state.js';
 import { icons } from './icons.js';
 import { toast } from './toast.js';
 import { t } from './i18n.js';
-import { knownTags } from './tags-ui.js';
 import { state } from './state.js';
 
 const swatches = () => COLORS.map((c) => `<button class="color-dot hl-color-${c}" data-color="${c}" title="${c}"></button>`).join('');
 const escAttr = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const colorOfTag = (tag) => [...state.annotations.values()].find((a) => a.tag === tag)?.color ?? 'yellow';
+
+/** Tags in the order they help here: the ones this document already leans on, then the rest. */
+function orderedTags() {
+  const used = new Map();
+  for (const a of state.annotations.values()) if (a.tag) used.set(a.tag, (used.get(a.tag) ?? 0) + 1);
+  return [...used.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([tag]) => tag);
+}
+
+/** Every tag, on one scrolling line. Slicing the list off would hide tags with no way back to them. */
+function tagChips() {
+  const tags = orderedTags();
+  if (!tags.length) return '';
+  const chips = tags.map((tag) => `<button class="sel-tag hl-color-${colorOfTag(tag)}" data-tag="${escAttr(tag)}" title="${escAttr(t('sel.tagged', { tag }))}">${escAttr(tag)}</button>`).join('');
+  return `<div class="sel-tags">${chips}</div>`;
+}
 
 export function initSelection({ viewer, docApi }) {
   const bar = document.getElementById('sel-toolbar');
@@ -60,14 +74,18 @@ export function initSelection({ viewer, docApi }) {
   function show(p) {
     pending = p;
     bar.classList.remove('note-mode');
-    const tags = knownTags();
-    const chips = tags.length
-      ? `<div class="sel-tags">${tags.slice(0, 8).map((tag) => `<button class="sel-tag hl-color-${colorOfTag(tag)}" data-tag="${escAttr(tag)}" title="${escAttr(t('sel.tagged', { tag }))}">${escAttr(tag)}</button>`).join('')}</div>`
-      : '';
+    const chips = tagChips();
     bar.innerHTML = `${chips}<div class="sel-main"><span class="swatches">${swatches()}</span><span class="sep"></span><button class="tb-btn act-note">${icons.note}<span>${t('sel.note')}</span></button></div>`;
     bar.classList.toggle('with-tags', !!chips);
     bar.hidden = false;
     place(p.bounds);
+    markOverflow();
+  }
+
+  /** Fade the right edge only when there is more to scroll to. */
+  function markOverflow() {
+    const strip = bar.querySelector('.sel-tags');
+    if (strip) strip.classList.toggle('overflowing', strip.scrollWidth > strip.clientWidth + 1);
   }
   function place(b) {
     const w = bar.offsetWidth, h = bar.offsetHeight;
@@ -90,6 +108,13 @@ export function initSelection({ viewer, docApi }) {
   }
 
   bar.addEventListener('mousedown', (e) => e.preventDefault()); // keep the selection alive
+  // a mouse wheel only scrolls vertically, and the tag strip runs the other way
+  bar.addEventListener('wheel', (e) => {
+    const strip = e.target.closest?.('.sel-tags');
+    if (!strip || strip.scrollWidth <= strip.clientWidth || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    strip.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
   bar.addEventListener('click', (e) => {
     const chip = e.target.closest('.sel-tag');
     if (chip) { create({ tag: chip.dataset.tag, note: bar.querySelector('textarea')?.value }); return; }
@@ -98,10 +123,9 @@ export function initSelection({ viewer, docApi }) {
     if (e.target.closest('.act-note')) {
       const b = pending.bounds;
       bar.classList.add('note-mode');
-      const tags = knownTags();
-      const chips = tags.length ? `<div class="sel-tags">${tags.slice(0, 8).map((tag) => `<button class="sel-tag hl-color-${colorOfTag(tag)}" data-tag="${escAttr(tag)}">${escAttr(tag)}</button>`).join('')}</div>` : '';
-      bar.innerHTML = `<textarea placeholder="${t('sel.notePlaceholder')}"></textarea>${chips}<div class="note-row"><span class="swatches">${swatches()}</span><span class="grow"></span><button class="tb-btn act-cancel">${t('sel.cancel')}</button></div>`;
+      bar.innerHTML = `<textarea placeholder="${t('sel.notePlaceholder')}"></textarea>${tagChips()}<div class="note-row"><span class="swatches">${swatches()}</span><span class="grow"></span><button class="tb-btn act-cancel">${t('sel.cancel')}</button></div>`;
       place(b);
+      markOverflow();
       const ta = bar.querySelector('textarea');
       setTimeout(() => ta.focus(), 0);
       ta.onkeydown = (ev) => { ev.stopPropagation(); if (ev.key === 'Escape') hide(); if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') create({ color: 'yellow', note: ta.value }); };

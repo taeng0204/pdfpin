@@ -276,7 +276,7 @@ mark.mk { color: inherit; background: color-mix(in srgb, var(--hl-color) calc(va
 .card-edit { width: 100%; min-height: 64px; resize: vertical; border: 1px solid var(--line-strong); border-radius: 6px; padding: 8px; background: var(--surface); font: 13px var(--font-ui); color: var(--ink); margin-top: 4px; }
 .card-edit:focus { outline: none; border-color: var(--ink); }
 .card-edit-row { display: flex; gap: 6px; justify-content: flex-end; margin-top: 6px; }
-.btn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; padding: 5px 11px; font-size: 12.5px; cursor: pointer; color: var(--ink); }
+.btn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; padding: 5px 11px; font-size: 12.5px; cursor: pointer; color: var(--ink); white-space: nowrap; }
 .btn:hover { background: var(--hover); }
 .btn.primary { background: var(--ink); border-color: var(--ink); color: var(--surface); }
 .btn.primary:hover { opacity: 0.88; background: var(--ink); }
@@ -318,33 +318,32 @@ mark.mk { color: inherit; background: color-mix(in srgb, var(--hl-color) calc(va
 .popover .pop-actions .tb-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ---------- selection toolbar ---------- */
-.sel-toolbar { position: fixed; z-index: 45; display: flex; align-items: center; gap: 3px; padding: 5px 6px; background: var(--ink); color: var(--surface); border-radius: 9px; box-shadow: var(--shadow-pop); animation: pop-in 120ms ease-out both; }
+.sel-toolbar { position: fixed; z-index: 45; display: flex; align-items: center; gap: 3px; padding: 5px 6px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow-pop); animation: pop-in 120ms ease-out both; }
 .sel-toolbar[hidden] { display: none; }
 .color-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: var(--hl-color); padding: 0; transition: transform 100ms; }
 .color-dot:hover { transform: scale(1.15); }
-.sel-toolbar .color-dot { width: 18px; height: 18px; }
+/* one quiet row: the tags above already carry the colour, so the swatches stay secondary */
+.sel-toolbar .swatches { display: flex; gap: 3px; }
+.sel-toolbar .color-dot { width: 14px; height: 14px; }
 .swatches { display: grid; grid-template-columns: repeat(6, 18px); gap: 4px; }
-.sel-toolbar .color-dot:hover { border-color: var(--surface); }
-.sel-toolbar .sep { width: 1px; height: 16px; background: rgba(255,255,255,0.2); margin: 0 3px; }
-.sel-toolbar .tb-btn { border: 0; background: transparent; color: inherit; padding: 3px 8px; border-radius: 6px; cursor: pointer; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; }
-.sel-toolbar .tb-btn:hover { background: rgba(255,255,255,0.12); }
+.sel-toolbar .color-dot:hover { border-color: var(--line-strong); }
+.sel-toolbar .sep { width: 1px; height: 16px; background: var(--line); margin: 0 3px; }
+.sel-toolbar .tb-btn { border: 0; background: transparent; color: var(--ink-2); padding: 3px 8px; border-radius: 6px; cursor: pointer; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.sel-toolbar .tb-btn:hover { background: var(--hover); color: var(--ink); }
 .sel-toolbar .tb-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .sel-toolbar.note-mode { flex-direction: column; align-items: stretch; width: 300px; padding: 8px; }
-.sel-toolbar textarea { width: 100%; min-height: 60px; resize: vertical; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; background: rgba(255,255,255,0.08); color: inherit; font: 13px var(--font-ui); padding: 8px; }
-.sel-toolbar textarea:focus { outline: none; border-color: rgba(255,255,255,0.5); }
+.sel-toolbar textarea { width: 100%; min-height: 60px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); color: var(--ink); font: 13px var(--font-ui); padding: 8px; }
+.sel-toolbar textarea:focus { outline: none; border-color: var(--line-strong); box-shadow: 0 0 0 3px var(--accent-soft); }
 .sel-toolbar .note-row { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
 .sel-toolbar .note-row .grow { flex: 1; }
-:root[data-theme="dark"] .sel-toolbar { background: #f1f1ef; color: #1b1b1a; }
-:root[data-theme="dark"] .sel-toolbar .sep { background: rgba(0,0,0,0.15); }
-:root[data-theme="dark"] .sel-toolbar .tb-btn:hover { background: rgba(0,0,0,0.08); }
-:root[data-theme="dark"] .sel-toolbar textarea { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.15); }
 
 /* ---------- toasts & menus ---------- */
 .toasts { position: fixed; left: 16px; bottom: 16px; z-index: 50; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 9px; background: var(--ink); color: var(--surface); box-shadow: var(--shadow-pop); font-size: 13px; animation: toast-in 200ms ease-out both; max-width: 420px; }
 .toast.out { animation: toast-out 160ms ease-in both; }
 .toast .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--hl-color, var(--surface)); opacity: 0.9; flex: none; }
-.toast .tb-btn { border: 0; background: rgba(255,255,255,0.14); color: inherit; padding: 4px 9px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.toast .msg { min-width: 0; }
+.toast .tb-btn { border: 0; background: rgba(255,255,255,0.14); color: inherit; padding: 4px 9px; border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; flex: none; }
 .toast .tb-btn:hover { background: rgba(255,255,255,0.24); }
 .toast.error { background: var(--danger); color: #fff; }
 :root[data-theme="dark"] .toast { background: #f1f1ef; color: #1b1b1a; }
@@ -491,12 +490,17 @@ mark.mk { padding: 0.08em 0.22em; }
 .tag-row .icon-btn svg { width: 14px; height: 14px; }
 
 /* tag chips on the selection toolbar */
-.sel-toolbar.with-tags { flex-direction: column; align-items: stretch; gap: 6px; }
+.sel-toolbar.with-tags { flex-direction: column; align-items: stretch; gap: 0; }
 .sel-toolbar .sel-main { display: flex; align-items: center; gap: 3px; }
-.sel-tags { display: flex; flex-wrap: wrap; gap: 4px; max-width: 300px; }
-.sel-tag { border: 0; border-radius: 6px; padding: 3px 8px; font-size: 12px; cursor: pointer; color: #1b1b1a; background: color-mix(in srgb, var(--hl-color) 70%, transparent); }
-.sel-tag:hover { background: var(--hl-color); }
-.sel-toolbar.note-mode .sel-tags { max-width: none; }
+.sel-toolbar.with-tags .sel-main { border-top: 1px solid var(--line); margin-top: 5px; padding-top: 5px; }
+/* one line that scrolls: a document with twenty tags must not grow the toolbar into a wall */
+.sel-tags { display: flex; gap: 1px; max-width: 320px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+.sel-tags::-webkit-scrollbar { display: none; }
+.sel-tags.overflowing { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); }
+.sel-tag { flex: none; display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--ink); border-radius: 6px; padding: 4px 8px; font: 12.5px var(--font-ui); cursor: pointer; white-space: nowrap; }
+.sel-tag::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--hl-color); flex: none; }
+.sel-tag:hover { background: color-mix(in srgb, var(--hl-color) 38%, transparent); }
+.sel-toolbar.note-mode .sel-tags { max-width: 100%; }
 
 /* archived sessions */
 .arch-rows { display: grid; gap: 2px; padding: 6px 0 4px; }
