@@ -142,3 +142,21 @@ test('a document changed on disk by someone else is re-read, not clobbered', asy
   assert.equal(onDisk.annotations.length, 3, 'and nothing was lost when we wrote again');
   assert.ok(onDisk.annotations.some((a) => a.id === 'a_other0'));
 });
+
+test('a document file that cannot be read is set aside, never silently replaced', () => {
+  const doc = store.openDocument(meta);
+  store.addAnnotation(doc.id, { page: 1, quote: 'precious', note: '' });
+  const file = path.join(home, 'docs', `${doc.id}.json`);
+
+  // something truncates the file, and a fresh process tries to open the same PDF again
+  fs.writeFileSync(file, '{"id":"');
+  const fresh = new Store(home);
+  assert.equal(fresh.get(doc.id), null);
+
+  const rescued = fs.readdirSync(path.join(home, 'docs')).filter((f) => f.includes('unreadable'));
+  assert.equal(rescued.length, 1, 'the damaged file is kept for recovery');
+  assert.equal(fs.readFileSync(path.join(home, 'docs', rescued[0]), 'utf8'), '{"id":"');
+
+  const reopened = fresh.openDocument(meta);
+  assert.deepEqual(reopened.annotations, [], 'a new record starts empty, but the old bytes survive');
+});

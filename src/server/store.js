@@ -67,9 +67,20 @@ export class Store {
   get(id) {
     // Trust the cache only while the file still looks like the copy we wrote. Anything else means
     // another writer touched it, and serving our stale copy would quietly undo their work.
-    const stamp = mtimeOf(this._file(id));
+    const file = this._file(id);
+    const stamp = mtimeOf(file);
     if (this.cache.has(id) && stamp !== null && this.stamps.get(id) === stamp) return this.cache.get(id);
-    const doc = readJson(this._file(id), null);
+    const doc = stamp === null ? null : readJson(file, undefined);
+    if (doc === undefined) {
+      // The file is there but we cannot make sense of it. Never hand back "no such document": the
+      // caller would create an empty one and write it straight over these bytes.
+      const kept = `${file}.unreadable-${Date.now()}`;
+      try { fs.renameSync(file, kept); } catch { /* it may have vanished under us */ }
+      this.cache.delete(id);
+      this.stamps.delete(id);
+      console.error(`[pdfpin] could not read ${file}; kept it as ${kept}`);
+      return null;
+    }
     if (doc) {
       this.stamps.set(id, stamp);
       doc.sessions ??= [];

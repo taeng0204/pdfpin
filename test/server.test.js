@@ -353,7 +353,7 @@ test('the demo document is built on request and reports whether the tour has run
   assert.equal((await api('GET', '/api/settings')).json.settings.onboarded, false);
   const r = await api('POST', '/api/demo');
   assert.equal(r.status, 200, r.text);
-  assert.match(r.json.doc.path, /warm-starts\.pdf$/);
+  assert.match(r.json.doc.path, /pdfpin-intro\.pdf$/);
   assert.equal(r.json.doc.pages, 1);
   assert.deepEqual(r.json.doc.annotations, []);
   assert.deepEqual(r.json.doc.sessions, []);

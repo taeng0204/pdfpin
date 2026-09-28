@@ -34,6 +34,8 @@ export function formatBinding(binding) {
   return [...(has('mod') ? ['Ctrl'] : []), ...(has('alt') ? ['Alt'] : []), ...(has('shift') ? ['Shift'] : []), label].join('+');
 }
 
-/** macOS hands these to the system or to Chrome before the page ever sees them. */
-const MAC_RESERVED = new Set(['mod+h', 'mod+q', 'mod+m', 'mod+w', 'mod+n', 'mod+t', 'mod+e', 'mod+shift+h']);
-export const isReserved = (binding) => IS_MAC && MAC_RESERVED.has(binding);
+// Combinations the browser or the system takes before the page can see them. They differ per
+// platform, so a binding that works on Windows can be swallowed on a Mac and the other way round.
+const MAC_RESERVED = new Set(['mod+h', 'mod+q', 'mod+m', 'mod+w', 'mod+n', 'mod+t', 'mod+e', 'mod+shift+h', 'mod+shift+n', 'mod+shift+t']);
+const OTHER_RESERVED = new Set(['mod+n', 'mod+t', 'mod+w', 'mod+shift+n', 'mod+shift+t', 'mod+shift+w', 'mod+shift+q']);
+export const isReserved = (binding) => (IS_MAC ? MAC_RESERVED : OTHER_RESERVED).has(binding);

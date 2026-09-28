@@ -75,9 +75,9 @@ export function runTour({ docApi, viewer, highlights }) {
     const s1 = (await docApi.addSession({ title: t('tour.q1'), flow: t('tour.q1flow') })).session;
     say(t('tour.a1marking'), 1);
     const marks = [
-      { text: quotes[0], note: t('tour.q1n1'), tag: 'setup' },
-      { text: quotes[1], note: t('tour.q1n2'), tag: 'result' },
-      { text: quotes[2], note: t('tour.q1n3'), tag: 'cost' },
+      { text: quotes[0], note: t('tour.q1n1'), tag: 'method' },
+      { text: quotes[1], note: t('tour.q1n2'), tag: 'matching' },
+      { text: quotes[2], note: t('tour.q1n3'), tag: 'limit' },
     ];
     for (const m of marks) {
       guard();
@@ -91,7 +91,7 @@ export function runTour({ docApi, viewer, highlights }) {
     await sleep(500);
     say(t('tour.a1second'), 1);
     const s2 = (await docApi.addSession({ title: t('tour.q2'), flow: t('tour.q2flow') })).session;
-    await docApi.add({ text: quotes[3], note: t('tour.q2n1'), tag: 'limit', sessionId: s2.id });
+    await docApi.add({ text: quotes[3], note: t('tour.q2n1'), tag: 'privacy', sessionId: s2.id });
     await sleep(1800);
   }
 
