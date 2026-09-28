@@ -2,7 +2,7 @@
 import { api, docApi as makeDocApi } from './api.js';
 import { state, on, emit, savePref, setAnnotations, upsertAnnotation, dropAnnotation, select, setSessions, upsertSession, dropSession } from './state.js';
 import { confirmDialog } from './dialog.js';
-import { initViewer } from './viewer.js';
+import { initViewer, mark } from './viewer.js';
 import { initHighlights } from './highlights.js';
 import { initPanel } from './panel.js';
 import { initSearch } from './search.js';
@@ -34,6 +34,7 @@ function applyPanel() {
 }
 
 async function boot() {
+  mark('boot');
   const m = location.pathname.match(/^\/view\/([^/]+)/);
   let doc;
   try {
@@ -108,6 +109,7 @@ async function boot() {
   $('page-input').addEventListener('focus', (e) => e.target.select());
   $('page-input').addEventListener('blur', () => { $('page-input').value = state.currentPage; });
 
+  mark('ready');
   // sessions + annotations (older sessions start folded; the latest stays open)
   setSessions(doc.sessions || [], doc.currentSessionId);
   for (const s of state.sessions.slice(0, -1)) state.collapsed.add(s.id);

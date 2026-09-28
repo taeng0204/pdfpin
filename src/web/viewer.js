@@ -1,9 +1,12 @@
-// PDF rendering: page shells for every page, lazy hi-DPI canvases, eager text layers, zoom.
+// PDF rendering: page shells for every page; canvases, fonts and text layers are all built on demand
+// for the pages near the viewport and released again when they scroll away.
 import { textItems, buildPageText } from '/shared/pagetext.js';
 import { state, emit, savePref } from './state.js';
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
 const GAP = 22;
+
+export const mark = (name) => { try { performance.mark(`pdfpin:${name}`); } catch { /* ignore */ } };
 
 export async function initViewer({ viewerEl, pagesEl, fileUrl }) {
   const pdfjs = await import('/vendor/pdfjs/pdf.mjs');
@@ -30,7 +33,6 @@ export async function initViewer({ viewerEl, pagesEl, fileUrl }) {
       canvas: el.querySelector('canvas'), textEl: el.querySelector('.textLayer'), hlEl: el.querySelector('.hl-layer'),
       textLayer: null, items: null, index: null, spanIndex: new WeakMap(), rendered: 0, renderTask: null, visible: false,
     };
-    ps.textReady = new Promise((r) => { ps._resolveText = r; });
     v.pages.push(ps);
     v.maxBaseW = Math.max(v.maxBaseW, vp.width);
     v.maxBaseH = Math.max(v.maxBaseH, vp.height);
@@ -40,20 +42,19 @@ export async function initViewer({ viewerEl, pagesEl, fileUrl }) {
     for (const e of entries) {
       const ps = v.pages[Number(e.target.dataset.page) - 1];
       ps.visible = e.isIntersecting;
-      if (e.isIntersecting) renderCanvas(v, ps);
-      else if (ps.rendered) releaseCanvas(ps);
+      if (e.isIntersecting) {
+        renderCanvas(v, ps);
+        ensureTextLayer(v, ps).catch((err) => console.error('text layer', ps.num, err));
+      } else {
+        if (ps.rendered) releaseCanvas(ps);
+        releaseTextLayer(ps);
+      }
     }
   }, { root: viewerEl, rootMargin: '900px 0px' });
 
   applyScale(v, computeScale(v, state.zoomMode));
+  mark('shell');
   for (const ps of v.pages) io.observe(ps.el);
-
-  // Text layers are cheap and needed for anchors/search: build them all, first pages first.
-  (async () => {
-    for (const ps of v.pages) {
-      try { await buildTextLayer(v, ps); } catch (err) { console.error('text layer', ps.num, err); ps._resolveText(); }
-    }
-  })();
 
   let ticking = false;
   viewerEl.addEventListener('scroll', () => {
@@ -75,6 +76,8 @@ export async function initViewer({ viewerEl, pagesEl, fileUrl }) {
   }, { passive: false });
 
   v.ensureFonts = (ps) => ensureFonts(v, ps);
+  v.ensureIndex = (ps) => ensureIndex(ps);
+  v.ensureTextLayer = (ps) => ensureTextLayer(v, ps);
   v.setZoom = (mode, opts) => setZoom(v, mode, opts);
   v.zoomStep = (dir) => zoomStep(v, dir);
   v.scrollToPage = (n) => scrollToPage(v, n);
@@ -160,7 +163,9 @@ async function renderCanvas(v, ps) {
   ps.canvas = canvas;
   ps.rendered = key;
   ps.el.classList.remove('unrendered');
-  ensureFonts(v, ps); // fonts are loaded now; relayout the text layer once if it predates them
+  if (!v._firstPainted) { v._firstPainted = true; mark('first-page'); }
+  // fonts arrived with the canvas: relay out the text layer so the glyph boxes are exact
+  ensureFonts(v, ps).then(() => { if (ps.visible) ensureTextLayer(v, ps).catch(() => {}); }); // fonts are loaded now; relayout the text layer once if it predates them
 }
 
 function releaseCanvas(ps) {
@@ -171,22 +176,50 @@ function releaseCanvas(ps) {
   ps.el.classList.add('unrendered');
 }
 
-async function buildTextLayer(v, ps) {
-  const content = ps.content || (ps.content = await ps.page.getTextContent());
-  if (!ps.items) {
+/**
+ * The page's text and offset map, without touching the DOM. This is what search and anchors need,
+ * and it is far cheaper than laying out one span per text run.
+ */
+export function ensureIndex(ps) {
+  if (ps.index) return Promise.resolve(ps.index);
+  ps.indexJob ??= (async () => {
+    const content = ps.content || (ps.content = await ps.page.getTextContent());
     ps.items = textItems(content);
     ps.index = { page: ps.num, items: ps.items, ...buildPageText(ps.items) };
-  }
-  ps.textLayer?.cancel();
+    return ps.index;
+  })();
+  return ps.indexJob;
+}
+
+/** The DOM text layer, needed only to select text and to measure exact glyph rectangles. */
+function ensureTextLayer(v, ps) {
+  if (ps.textLayer && ps.textLayerFonts === ps.fontsReady && ps.textLayerScale === v.scale) return Promise.resolve(ps.textLayer);
+  ps.textJob = (async () => {
+    await ensureIndex(ps);
+    await ensureFonts(v, ps);
+    if (!ps.visible && ps.textLayer) return ps.textLayer; // scrolled away while we waited
+    ps.textLayer?.cancel();
+    ps.textEl.replaceChildren();
+    const tl = new v.pdfjs.TextLayer({ textContentSource: ps.content, container: ps.textEl, viewport: ps.page.getViewport({ scale: v.scale }) });
+    await tl.render();
+    ps.textLayer = tl;
+    ps.textLayerFonts = ps.fontsReady;
+    ps.textLayerScale = v.scale;
+    ps.spanIndex = new WeakMap();
+    tl.textDivs.forEach((div, i) => ps.spanIndex.set(div, i));
+    if (!v._textMarked) { v._textMarked = true; mark('text-ready'); }
+    emit('textlayer', ps);
+    return tl;
+  })();
+  return ps.textJob;
+}
+
+function releaseTextLayer(ps) {
+  if (!ps.textLayer) return;
+  ps.textLayer.cancel();
+  ps.textLayer = null;
+  ps.textJob = null;
   ps.textEl.replaceChildren();
-  const tl = new v.pdfjs.TextLayer({ textContentSource: content, container: ps.textEl, viewport: ps.page.getViewport({ scale: v.scale }) });
-  await tl.render();
-  ps.textLayer = tl;
-  ps.spanIndex = new WeakMap();
-  tl.textDivs.forEach((div, i) => ps.spanIndex.set(div, i));
-  ps.textLayerFonts = ps.fontsReady;
-  ps._resolveText();
-  emit('textlayer', ps);
 }
 
 /**
@@ -201,8 +234,6 @@ async function ensureFonts(v, ps) {
       try { await ps.page.getOperatorList(); } catch { /* rendering will surface the error */ }
       try { await document.fonts.ready; } catch { /* ignore */ }
       ps.fontsReady = true;
-      await ps.textReady;
-      if (!ps.textLayerFonts) await buildTextLayer(v, ps);
     })();
   }
   await ps.fontsJob;

@@ -18,8 +18,8 @@ export function initHighlights(viewer, docApi) {
     const ps = viewer.pages[a.page - 1];
     if (!ps) return a.rects || [];
     if (!a.anchor) return a.rects || [];
-    await ps.textReady;
-    await viewer.ensureFonts(ps);
+    // Exact rects need this page's DOM text layer, which exists only while the page is near the
+    // viewport. Elsewhere the stored rects serve, and 'textlayer' refines them when it scrolls in.
     if (!ps.textLayer) return a.rects || [];
     const rects = pageRects(ps, a.anchor);
     if (rects.length) {
@@ -159,13 +159,13 @@ export function initHighlights(viewer, docApi) {
 
   // ---- search hits (separate, lighter layer) ----
   const searchEls = [];
-  function showSearchHits(hits, currentIdx) {
+  function showSearchHits(hits) {
     clearSearchHits();
-    hits.forEach((h, i) => {
+    hits.forEach((h) => {
       const ps = viewer.pages[h.page - 1];
       for (const r of h.rects) {
         const d = document.createElement('div');
-        d.className = `search-hit${i === currentIdx ? ' current' : ''}`;
+        d.className = `search-hit${h.current ? ' current' : ''}`;
         d.style.cssText = `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
         ps.hlEl.appendChild(d);
         searchEls.push(d);
