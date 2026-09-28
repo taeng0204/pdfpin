@@ -223,6 +223,57 @@ export class DocManager {
     for (const row of this.store.list()) this.recolor({ id: row.id });
   }
 
+  /** Every tag in the document with what the reader needs to manage it. */
+  tags(doc) {
+    const fresh = this.store.get(doc.id);
+    const out = new Map();
+    for (const a of fresh.annotations) {
+      if (!a.tag) continue;
+      if (!out.has(a.tag)) out.set(a.tag, { tag: a.tag, count: 0, color: a.color, pinned: 0, override: fresh.tagColors[a.tag] ?? null });
+      const row = out.get(a.tag);
+      row.count++;
+      if (a.colorAuto) row.color = a.color; else row.pinned++;
+    }
+    return [...out.values()];
+  }
+
+  /** Rename a tag (renaming onto an existing one merges them) and/or set its colour. */
+  updateTag(doc, tag, { name, color }) {
+    const fresh = this.store.get(doc.id);
+    if (!fresh.annotations.some((a) => a.tag === tag)) throw new ApiError(404, `No highlight carries the tag "${tag}"`);
+    if (color !== undefined && color !== null && !COLORS.includes(color)) throw new ApiError(400, `Unknown colour "${color}". Choose from: ${COLORS.join(', ')}`);
+    let target = tag;
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !name.trim()) throw new ApiError(400, 'A tag needs a name');
+      target = name.trim();
+      if (target !== tag) {
+        for (const a of fresh.annotations) if (a.tag === tag) a.tag = target;
+        if (fresh.tagColors[tag] && !fresh.tagColors[target]) fresh.tagColors[target] = fresh.tagColors[tag];
+        delete fresh.tagColors[tag];
+      }
+    }
+    if (color !== undefined) {
+      if (color === null) delete fresh.tagColors[target]; else fresh.tagColors[target] = color;
+    }
+    this.store._save(fresh);
+    this.recolor(doc);
+    this.hub.broadcast(doc.id, 'colors.changed', { tagColors: fresh.tagColors, sessionColors: fresh.sessionColors });
+    return this.store.get(doc.id);
+  }
+
+  /** Take a tag off every highlight that carries it. The highlights stay. */
+  removeTag(doc, tag) {
+    const fresh = this.store.get(doc.id);
+    const hit = fresh.annotations.filter((a) => a.tag === tag);
+    if (!hit.length) throw new ApiError(404, `No highlight carries the tag "${tag}"`);
+    for (const a of hit) a.tag = '';
+    delete fresh.tagColors[tag];
+    this.store._save(fresh);
+    this.recolor(doc);
+    this.hub.broadcast(doc.id, 'colors.changed', { tagColors: fresh.tagColors, sessionColors: fresh.sessionColors });
+    return { doc: this.store.get(doc.id), updated: hit.length };
+  }
+
   setColors(doc, { tags, sessions }) {
     const fresh = this.store.get(doc.id);
     for (const [k, v] of Object.entries({ ...tags, ...sessions })) {
@@ -325,6 +376,13 @@ export class DocManager {
     const clean = {};
     for (const k of ['note', 'title', 'color', 'tag', 'quote']) if (patch[k] !== undefined) clean[k] = patch[k];
     if (patch.color !== undefined) clean.colorAuto = false;
+    else if (patch.tag !== undefined) {
+      // naming a topic means "colour me like that topic", so the rule takes over again
+      clean.colorAuto = true;
+      const fresh = this.store.get(doc.id);
+      const current = fresh.annotations.find((a) => a.id === annId);
+      clean.color = this._autoColor(fresh, { tag: patch.tag, sessionId: current?.sessionId });
+    }
     if (patch.sessionId !== undefined) clean.sessionId = this._sessionFor(doc, { sessionId: patch.sessionId });
     if (Array.isArray(patch.rects)) {
       clean.rects = cleanRects(patch.rects, { allowEmpty: true });

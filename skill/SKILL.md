@@ -56,6 +56,9 @@ passages with short notes; the human sees them live in the viewer's side panel.
   picked, and they can repaint any tag afterwards. Set `"color"` only when one highlight must keep a specific
   colour; that pins it. Palette: yellow, green, blue, pink, purple, orange, teal, red, cyan, lime, indigo, grape.
   So give every highlight a `tag` — that is what makes the colours mean something to the reader.
+- Tags are shared with the reader: they can tag their own highlights with yours, rename a tag everywhere
+  (`pdfpin tags rename <from> <to>`) or recolour it. Reuse a tag that already exists rather than inventing
+  a near-duplicate; `pdfpin tags` lists what the document already uses.
 - `pdfpin list` shows sessions and highlights; `pdfpin export` writes `<name>.annotated.pdf` with real PDF
   highlight annotations; `--format md` writes a Markdown report grouped by session.
 - Every command accepts `-d <id|path|file name>` to target a document that is not the current one.

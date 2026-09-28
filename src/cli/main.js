@@ -352,6 +352,48 @@ program
     out(`exported ${r.count} annotation(s) → ${r.path}`);
   });
 
+const tags = program.command('tags').description('tags of the document: list, rename, recolour, remove');
+tags
+  .command('list', { isDefault: true })
+  .description('list tags with how many highlights carry each')
+  .option('--json', 'machine-readable output')
+  .action(async (opts) => {
+    const c = await client({ start: false });
+    const { tags: rows } = await c.call('GET', `/api/docs/${docRef()}/tags`);
+    if (opts.json) return json(rows);
+    if (!rows.length) return out('No tags.');
+    for (const r of rows) out(`${r.tag.padEnd(20)} ${String(r.count).padStart(3)} hl  ${r.color}${r.override ? ' (set by hand)' : ''}${r.pinned ? `  ${r.pinned} pinned` : ''}`);
+  });
+tags
+  .command('rename')
+  .description('rename a tag everywhere; renaming onto an existing tag merges them')
+  .argument('<from>')
+  .argument('<to>')
+  .action(async (from, to) => {
+    const c = await client({ start: false });
+    await c.call('PATCH', `/api/docs/${docRef()}/tags/${encodeURIComponent(from)}`, { name: to });
+    out(`renamed "${from}" to "${to}"`);
+  });
+tags
+  .command('color')
+  .description('set a tag colour, or "auto" to follow the palette again')
+  .argument('<tag>')
+  .argument('<color>')
+  .action(async (tag, color) => {
+    const c = await client({ start: false });
+    await c.call('PATCH', `/api/docs/${docRef()}/tags/${encodeURIComponent(tag)}`, { color: color === 'auto' ? null : color });
+    out(`"${tag}" is now ${color}`);
+  });
+tags
+  .command('rm')
+  .description('take a tag off its highlights (the highlights stay)')
+  .argument('<tag>')
+  .action(async (tag) => {
+    const c = await client({ start: false });
+    const r = await c.call('DELETE', `/api/docs/${docRef()}/tags/${encodeURIComponent(tag)}`);
+    out(`removed "${tag}" from ${r.updated} highlight(s)`);
+  });
+
 program
   .command('settings')
   .description('show or change viewer settings (language, theme, palette, shortcuts)')

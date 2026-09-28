@@ -97,6 +97,9 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   route('POST', '/api/docs/:id/activate', ({ params }) => ({ doc: withUrls(docs.activate(docs.resolve(params.id))) }));
   route('POST', '/api/docs/:id/reveal', ({ params }) => docs.reveal(docs.resolve(params.id)));
   route('PATCH', '/api/docs/:id/colors', ({ params, body }) => ({ doc: withUrls(docs.setColors(docs.resolve(params.id), body || {})) }));
+  route('GET', '/api/docs/:id/tags', ({ params }) => ({ tags: docs.tags(docs.resolve(params.id)) }));
+  route('PATCH', '/api/docs/:id/tags/:tag', ({ params, body }) => ({ doc: withUrls(docs.updateTag(docs.resolve(params.id), params.tag, body || {})) }));
+  route('DELETE', '/api/docs/:id/tags/:tag', ({ params }) => { const r = docs.removeTag(docs.resolve(params.id), params.tag); return { doc: withUrls(r.doc), updated: r.updated }; });
   route('DELETE', '/api/docs/:id', async ({ params }) => { const d = docs.resolve(params.id); await docs.removeDocument(d); return { ok: true, removed: d.id }; });
   route('GET', '/api/docs/:id/file', ({ params, res }) => {
     const doc = docs.resolve(params.id);

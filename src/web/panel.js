@@ -5,6 +5,7 @@ import { renderMarkdown } from './markdown.js';
 import { icons } from './icons.js';
 import { toast } from './toast.js';
 import { confirmDialog, pickColor } from './dialog.js';
+import { openTags, refreshTagOptions } from './tags-ui.js';
 import { t } from './i18n.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -203,10 +204,17 @@ export function initPanel({ docApi, viewer, highlights }) {
     ta.className = 'card-edit';
     ta.value = a.note || '';
     ta.placeholder = t('card.notePlaceholder');
+    const tagInput = document.createElement('input');
+    tagInput.className = 'card-edit-tag';
+    tagInput.placeholder = t('card.tagPlaceholder');
+    tagInput.value = a.tag || '';
+    tagInput.setAttribute('list', 'tag-options');
+    tagInput.spellcheck = false;
     const row = document.createElement('div');
     row.className = 'card-edit-row';
     row.innerHTML = `<button class="btn act-cancel">${t('common.cancel')}</button><button class="btn primary act-save">${t('common.save')}</button>`;
-    note.append(ta, row);
+    note.append(tagInput, ta, row);
+    tagInput.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); ta.focus(); } if (e.key === 'Escape') { editingId = null; renderCards(); } };
     ta.focus();
     ta.onkeydown = (e) => {
       if (e.key === 'Escape') { editingId = null; renderCards(); }
@@ -216,7 +224,10 @@ export function initPanel({ docApi, viewer, highlights }) {
     row.querySelector('.act-cancel').onclick = (e) => { e.stopPropagation(); editingId = null; renderCards(); };
     row.querySelector('.act-save').onclick = async (e) => {
       e.stopPropagation();
-      try { await docApi.update(a.id, { note: ta.value }); editingId = null; } catch (err) { toast(err.message, { error: true }); }
+      const patch = { note: ta.value };
+      const tag = tagInput.value.trim();
+      if (tag !== (a.tag || '')) patch.tag = tag; // only when it moved, so the colour rule is left alone
+      try { await docApi.update(a.id, patch); editingId = null; } catch (err) { toast(err.message, { error: true }); }
     };
   }
 
@@ -376,7 +387,11 @@ export function initPanel({ docApi, viewer, highlights }) {
 
   filterInput.addEventListener('input', () => { state.filter.text = filterInput.value; renderCards(); emit('filter'); });
 
-  function renderAll() { renderFilters(); renderCards(); }
+  const tagsBtn = document.getElementById('tags-btn');
+  tagsBtn.innerHTML = icons.tag;
+  tagsBtn.onclick = () => openTags(docApi);
+
+  function renderAll() { refreshTagOptions(); renderFilters(); renderCards(); }
   on('annotations', renderAll);
   on('sessions', renderAll);
   on('rects', () => renderCards());

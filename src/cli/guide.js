@@ -42,7 +42,8 @@ COMMANDS
   add --json '<array|object>' | --from f.json | --stdin
   session start --title "…" [--flow "…"] | update [id] --title/--flow | list | use <id|none> | rm <id>
   list [--json] [--tag t] [-s <session>]         sessions and their highlights
-  note <id> [--note …] [--color …] [--tag …] [--title …]
+  note <id> [--note …] [--color …] [--tag …] [--title …]   (giving --tag makes the colour follow that tag)
+  tags [list] | tags rename <from> <to> | tags color <tag> <color|auto> | tags rm <tag>
   rm <id…> | clear [--tag t]
   focus <id> | --page N | --session <id>
   export [--out path] [--format pdf|md]          annotated PDF (real highlight annotations) or Markdown by session

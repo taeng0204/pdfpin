@@ -33,4 +33,7 @@ export const docApi = (id) => ({
   updateSession: (sid, patch) => api('PATCH', `/api/docs/${id}/sessions/${sid}`, patch),
   removeSession: (sid) => api('DELETE', `/api/docs/${id}/sessions/${sid}`),
   setColors: (patch) => api('PATCH', `/api/docs/${id}/colors`, patch),
+  tags: () => api('GET', `/api/docs/${id}/tags`),
+  updateTag: (tag, patch) => api('PATCH', `/api/docs/${id}/tags/${encodeURIComponent(tag)}`, patch),
+  removeTag: (tag) => api('DELETE', `/api/docs/${id}/tags/${encodeURIComponent(tag)}`),
 });

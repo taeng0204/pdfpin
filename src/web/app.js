@@ -57,6 +57,7 @@ function applyStrings() {
   set('panel-toggle', 'title', t('top.history', { key: keyFor('history') }));
   set('drawer-close', 'title', t('top.close'));
   set('export-btn', 'title', t('panel.export'));
+  set('tags-btn', 'title', t('tags.manage'));
   set('copy-all-btn', 'title', t('panel.copyAll'));
   set('page-input', 'ariaLabel', t('top.currentPage'));
   const brand = document.querySelector('.brand');

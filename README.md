@@ -31,6 +31,8 @@ pdfpin list · pdfpin rm <id> · pdfpin clear --tag claim-1
 pdfpin focus <id>                           # scroll the viewer to a highlight
 pdfpin export                               # paper.annotated.pdf with real highlight annotations
 pdfpin export --format md                   # Markdown report
+pdfpin tags                                 # every tag with its count and colour
+pdfpin tags rename claim evidence · tags color evidence lime · tags rm evidence
 pdfpin settings                             # language, theme, palette, shortcuts
 pdfpin settings language=ko keys.history=mod+e
 pdfpin status · pdfpin stop
@@ -60,6 +62,10 @@ pdfpin status · pdfpin stop
 - Twelve highlight colours. Colour follows the tag by default, or the session if you prefer one colour
   per question (`⌘,` → Colour highlights by). Click the dot beside a group to repaint that tag or session;
   a colour the agent asked for by name is never repainted.
+- Tags are shared between the agent and you. Type a tag into any highlight's note editor, or pick one of
+  the document's tags straight from the selection toolbar, and it takes that tag's colour. The tag manager
+  in the panel header renames a tag everywhere (renaming onto an existing tag merges them), recolours it,
+  or takes it off its highlights.
 
 ## How it works
 

@@ -4,8 +4,12 @@ import { COLORS } from './state.js';
 import { icons } from './icons.js';
 import { toast } from './toast.js';
 import { t } from './i18n.js';
+import { knownTags } from './tags-ui.js';
+import { state } from './state.js';
 
 const swatches = () => COLORS.map((c) => `<button class="color-dot hl-color-${c}" data-color="${c}" title="${c}"></button>`).join('');
+const escAttr = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const colorOfTag = (tag) => [...state.annotations.values()].find((a) => a.tag === tag)?.color ?? 'yellow';
 
 export function initSelection({ viewer, docApi }) {
   const bar = document.getElementById('sel-toolbar');
@@ -56,7 +60,12 @@ export function initSelection({ viewer, docApi }) {
   function show(p) {
     pending = p;
     bar.classList.remove('note-mode');
-    bar.innerHTML = `<span class="swatches">${swatches()}</span><span class="sep"></span><button class="tb-btn act-note">${icons.note}<span>${t('sel.note')}</span></button>`;
+    const tags = knownTags();
+    const chips = tags.length
+      ? `<div class="sel-tags">${tags.slice(0, 8).map((tag) => `<button class="sel-tag hl-color-${colorOfTag(tag)}" data-tag="${escAttr(tag)}" title="${escAttr(t('sel.tagged', { tag }))}">${escAttr(tag)}</button>`).join('')}</div>`
+      : '';
+    bar.innerHTML = `${chips}<div class="sel-main"><span class="swatches">${swatches()}</span><span class="sep"></span><button class="tb-btn act-note">${icons.note}<span>${t('sel.note')}</span></button></div>`;
+    bar.classList.toggle('with-tags', !!chips);
     bar.hidden = false;
     place(p.bounds);
   }
@@ -69,28 +78,33 @@ export function initSelection({ viewer, docApi }) {
     bar.style.left = `${left}px`;
   }
 
-  async function create(color, note) {
+  /** With a tag the colour follows that tag; with a colour it is pinned to that colour. */
+  async function create({ color, tag, note }) {
     if (!pending) return;
     const p = pending;
     hide();
     window.getSelection()?.removeAllRanges();
-    try {
-      await docApi.add({ page: p.page, anchor: p.anchor, quote: p.quote, rects: p.rects, color, note: note || '', source: 'user' });
-    } catch (e) { toast(e.message, { error: true }); }
+    const spec = { page: p.page, anchor: p.anchor, quote: p.quote, rects: p.rects, note: note || '', source: 'user' };
+    if (tag) spec.tag = tag; else spec.color = color;
+    try { await docApi.add(spec); } catch (e) { toast(e.message, { error: true }); }
   }
 
   bar.addEventListener('mousedown', (e) => e.preventDefault()); // keep the selection alive
   bar.addEventListener('click', (e) => {
+    const chip = e.target.closest('.sel-tag');
+    if (chip) { create({ tag: chip.dataset.tag, note: bar.querySelector('textarea')?.value }); return; }
     const dot = e.target.closest('.color-dot');
-    if (dot) { create(dot.dataset.color, bar.querySelector('textarea')?.value); return; }
+    if (dot) { create({ color: dot.dataset.color, note: bar.querySelector('textarea')?.value }); return; }
     if (e.target.closest('.act-note')) {
       const b = pending.bounds;
       bar.classList.add('note-mode');
-      bar.innerHTML = `<textarea placeholder="${t('sel.notePlaceholder')}"></textarea><div class="note-row"><span class="swatches">${swatches()}</span><span class="grow"></span><button class="tb-btn act-cancel">${t('sel.cancel')}</button></div>`;
+      const tags = knownTags();
+      const chips = tags.length ? `<div class="sel-tags">${tags.slice(0, 8).map((tag) => `<button class="sel-tag hl-color-${colorOfTag(tag)}" data-tag="${escAttr(tag)}">${escAttr(tag)}</button>`).join('')}</div>` : '';
+      bar.innerHTML = `<textarea placeholder="${t('sel.notePlaceholder')}"></textarea>${chips}<div class="note-row"><span class="swatches">${swatches()}</span><span class="grow"></span><button class="tb-btn act-cancel">${t('sel.cancel')}</button></div>`;
       place(b);
       const ta = bar.querySelector('textarea');
       setTimeout(() => ta.focus(), 0);
-      ta.onkeydown = (ev) => { ev.stopPropagation(); if (ev.key === 'Escape') hide(); if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') create('yellow', ta.value); };
+      ta.onkeydown = (ev) => { ev.stopPropagation(); if (ev.key === 'Escape') hide(); if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') create({ color: 'yellow', note: ta.value }); };
       ta.onmousedown = (ev) => ev.stopPropagation();
       return;
     }

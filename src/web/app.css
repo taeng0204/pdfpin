@@ -472,3 +472,24 @@ mark.mk { color: inherit; background: color-mix(in srgb, var(--hl-color) calc(va
 /* a touch more room inside a highlight card */
 .card { padding: 11px 12px; }
 mark.mk { padding: 0.08em 0.22em; }
+
+/* ---------- tags ---------- */
+.card-edit-tag { width: 100%; height: 30px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--ink); padding: 0 9px; font-size: 12.5px; margin: 4px 0 6px; }
+.card-edit-tag:focus { outline: none; border-color: var(--ink); }
+.tag-rows { display: grid; gap: 2px; padding: 6px 0 4px; }
+.tag-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 6px 0; }
+.tag-row .color-dot { width: 16px; height: 16px; opacity: 1; }
+.tag-name { min-width: 0; height: 30px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--ink); padding: 0 8px; font-size: 13.5px; }
+.tag-name:hover { border-color: var(--line); }
+.tag-name:focus { outline: none; border-color: var(--ink); background: var(--surface); }
+.tag-count { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.tag-row .icon-btn { width: 26px; height: 26px; }
+.tag-row .icon-btn svg { width: 14px; height: 14px; }
+
+/* tag chips on the selection toolbar */
+.sel-toolbar.with-tags { flex-direction: column; align-items: stretch; gap: 6px; }
+.sel-toolbar .sel-main { display: flex; align-items: center; gap: 3px; }
+.sel-tags { display: flex; flex-wrap: wrap; gap: 4px; max-width: 300px; }
+.sel-tag { border: 0; border-radius: 6px; padding: 3px 8px; font-size: 12px; cursor: pointer; color: #1b1b1a; background: color-mix(in srgb, var(--hl-color) 70%, transparent); }
+.sel-tag:hover { background: var(--hl-color); }
+.sel-toolbar.note-mode .sel-tags { max-width: none; }
