@@ -155,10 +155,8 @@ async function boot() {
     toggleHighlights() { app.classList.toggle('hide-highlights'); },
     openSettings,
   };
-  let themeShiftTimer = null;
   let applied = null;
   function applySettings() {
-    const before = state.theme;
     const s = state.settings;
     const listChanged = !applied || applied.language !== s?.language || applied.colorBy !== s?.colorBy;
     applied = s ? { language: s.language, colorBy: s.colorBy } : null;
@@ -166,12 +164,6 @@ async function boot() {
     applyTheme();
     applyStrings();
     if (listChanged) panel.renderAll();
-    // Fade the colours rather than snapping to them. A class, not a page snapshot, so long PDFs stay smooth.
-    if (state.theme !== before && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      root.classList.add('theme-shift');
-      clearTimeout(themeShiftTimer);
-      themeShiftTimer = setTimeout(() => root.classList.remove('theme-shift'), 320);
-    }
   }
   on('settings', applySettings);
   initKeys({ viewer, search, ui });
