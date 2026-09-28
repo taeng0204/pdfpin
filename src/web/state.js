@@ -16,10 +16,11 @@ export const state = {
   selectedId: null,
   filter: { text: '', tags: new Set(), colors: new Set(), session: null },
   currentPage: 1,
-  theme: pref('theme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-  dim: pref('dim', true),
-  panelOpen: pref('panel', true),
-  zoomMode: pref('zoom', 'fit-width'),
+  settings: null,          // whatever the daemon holds; the single source of truth
+  theme: 'light',          // resolved from settings.theme
+  dim: true,
+  zoomMode: 'fit-width',
+  panelOpen: pref('panel', true), // a view state, not a preference worth syncing
 };
 
 export const COLORS = ['yellow', 'green', 'blue', 'pink', 'purple', 'orange', 'teal', 'red', 'cyan', 'lime', 'indigo', 'grape'];

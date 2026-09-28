@@ -3,6 +3,7 @@
 import { search } from '/shared/matcher.js';
 import { offsetsToAnchor } from '/shared/pagetext.js';
 import { on } from './state.js';
+import { t } from './i18n.js';
 import { icons } from './icons.js';
 import { computeDomRects } from './highlights.js';
 
@@ -53,7 +54,7 @@ export function initSearch({ viewer, highlights }) {
       if (hits.length >= MAX_HITS) break;
     }
     if (lastQuery !== q) return;
-    if (!hits.length) { count.textContent = 'No results'; return; }
+    if (!hits.length) { count.textContent = t('search.noResults'); return; }
     await jump(0);
   }
 

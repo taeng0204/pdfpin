@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import { Store } from './store.js';
 import { SseHub } from './sse.js';
 import { DocManager, ApiError } from './docs.js';
+import { SettingsStore, SettingsError } from './settings.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.join(__dirname, '..', 'web');
@@ -66,12 +67,23 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   fs.mkdirSync(home, { recursive: true });
   const store = new Store(home);
   const hub = new SseHub();
-  const docs = new DocManager(store, hub);
+  const settings = new SettingsStore(home);
+  const docs = new DocManager(store, hub, settings);
+
+  const saveSettings = (fn) => {
+    let value;
+    try { value = fn(); } catch (e) { throw e instanceof SettingsError ? new ApiError(400, e.message) : e; }
+    hub.broadcastAll('settings.changed', { settings: value });
+    return { settings: value };
+  };
 
   const routes = [];
   const route = (method, pattern, handler) => routes.push({ method, re: new RegExp(`^${pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)')}/?$`), handler });
 
   route('GET', '/api/health', () => ({ ok: true, version: VERSION, pid: process.pid, home }));
+  route('GET', '/api/settings', () => ({ settings: settings.get() }));
+  route('PATCH', '/api/settings', ({ body }) => saveSettings(() => settings.update(body || {})));
+  route('DELETE', '/api/settings', () => saveSettings(() => settings.reset()));
   route('GET', '/api/docs', () => ({ docs: store.list() }));
   route('POST', '/api/docs', async ({ body }) => {
     if (!body?.path) throw new ApiError(400, '"path" is required');
@@ -182,7 +194,7 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   });
   const actualPort = server.address().port;
   const handle = {
-    server, port: actualPort, host, home, store, docs, hub,
+    server, port: actualPort, host, home, store, docs, hub, settings,
     url: `http://${host}:${actualPort}`,
     close: async () => {
       hub.close();

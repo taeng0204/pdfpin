@@ -1,5 +1,9 @@
 // Minimal confirm dialog: returns a Promise<boolean>. Enter confirms, Esc cancels, focus stays inside.
-export function confirmDialog({ title, body = '', confirmText = 'OK', cancelText = 'Cancel', danger = false }) {
+import { t } from './i18n.js';
+
+export function confirmDialog({ title, body = '', confirmText, cancelText, danger = false }) {
+  confirmText ??= t('common.ok');
+  cancelText ??= t('common.cancel');
   return new Promise((resolve) => {
     const root = document.createElement('div');
     root.className = 'dialog-root';

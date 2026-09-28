@@ -1,34 +1,9 @@
-// Keyboard shortcuts.
+// Keyboard handling. Every configurable action comes from settings.keys; a few basics are fixed.
 import { state, select, visibleAnnotations } from './state.js';
+import { eventBinding } from './shortcuts.js';
 
 export function initKeys({ viewer, search, ui }) {
-  document.addEventListener('keydown', (e) => {
-    const t = e.target;
-    const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
-    const mod = e.metaKey || e.ctrlKey;
-    if (mod && e.key.toLowerCase() === 'f') { e.preventDefault(); search.open(); return; }
-    if (mod && (e.key === '=' || e.key === '+')) { e.preventDefault(); viewer.zoomStep(1); return; }
-    if (mod && e.key === '-') { e.preventDefault(); viewer.zoomStep(-1); return; }
-    if (mod && e.key === '0') { e.preventDefault(); viewer.setZoom('fit-width'); return; }
-    if (mod && !e.altKey && e.key.toLowerCase() === 'd') { e.preventDefault(); ui.toggleDocuments(); return; }
-    // ⌘H is taken by "Hide" on macOS, so ⌘⇧H is the one that actually reaches us there
-    if (mod && !e.altKey && e.key.toLowerCase() === 'h') { e.preventDefault(); ui.toggleHistory(); return; }
-    if (typing || mod || e.altKey) return;
-    switch (e.key) {
-      case 'n': case 'j': step(1); break;
-      case 'p': case 'k': step(-1); break;
-      case 't': ui.toggleHistory(); break;
-      case 'l': ui.toggleDocuments(); break;
-      case 'd': ui.toggleTheme(); break;
-      case 'h': ui.toggleHighlights(); break;
-      case 'ArrowLeft': case '[': e.preventDefault(); stepPage(-1); break;
-      case 'ArrowRight': case ']': e.preventDefault(); stepPage(1); break;
-      case '/': e.preventDefault(); search.open(); break;
-      case 'Escape': select(null); break;
-      default: return;
-    }
-  });
-  // One page per press. Keeps its own target so held or repeated presses do not fight the smooth scroll.
+  // One page per press, with its own target so repeated presses do not fight the smooth scroll.
   let target = null;
   let targetTimer = null;
   function stepPage(delta) {
@@ -40,11 +15,42 @@ export function initKeys({ viewer, search, ui }) {
     viewer.scrollToPage(next);
   }
 
-  function step(dir) {
+  function stepHighlight(dir) {
     const list = visibleAnnotations();
     if (!list.length) return;
     const i = list.findIndex((a) => a.id === state.selectedId);
     const next = i < 0 ? (dir > 0 ? 0 : list.length - 1) : (i + dir + list.length) % list.length;
     select(list[next].id, { from: 'keys' });
   }
+
+  const actions = {
+    documents: () => ui.toggleDocuments(),
+    history: () => ui.toggleHistory(),
+    settings: () => ui.openSettings(),
+    search: () => search.open(),
+    zoomIn: () => viewer.zoomStep(1),
+    zoomOut: () => viewer.zoomStep(-1),
+    zoomReset: () => viewer.setZoom('fit-width'),
+    nextPage: () => stepPage(1),
+    prevPage: () => stepPage(-1),
+    nextHighlight: () => stepHighlight(1),
+    prevHighlight: () => stepHighlight(-1),
+    theme: () => ui.toggleTheme(),
+    toggleHighlights: () => ui.toggleHighlights(),
+  };
+  const FIXED = { '/': () => search.open(), ']': () => stepPage(1), '[': () => stepPage(-1), Escape: () => select(null) };
+
+  document.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented) return;
+    const binding = eventBinding(e);
+    if (!binding) return;
+    const target = e.target;
+    const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+    const bindings = state.settings?.keys ?? {};
+    const action = Object.keys(actions).find((a) => bindings[a] === binding);
+    const needsModifier = binding.startsWith('mod');
+    if (action && (!typing || needsModifier)) { e.preventDefault(); actions[action](); return; }
+    if (typing || needsModifier || e.altKey) return;
+    if (FIXED[binding]) { e.preventDefault(); FIXED[binding](); }
+  });
 }

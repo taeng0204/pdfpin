@@ -5,6 +5,7 @@ import { renderMarkdown } from './markdown.js';
 import { icons } from './icons.js';
 import { toast } from './toast.js';
 import { confirmDialog } from './dialog.js';
+import { t } from './i18n.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -55,10 +56,10 @@ export function initPanel({ docApi, viewer, highlights }) {
     const visible = visibleAnnotations();
     const visibleIds = new Set(visible.map((a) => a.id));
     const ns = state.sessions.length;
-    countEl.textContent = `${ns} session${ns === 1 ? '' : 's'} · ${visible.length === all ? all : `${visible.length}/${all}`}`;
+    countEl.textContent = t('panel.count', { n: ns, m: visible.length === all ? all : `${visible.length}/${all}` });
     cardsEl.innerHTML = '';
     if (!all && !state.sessions.length) {
-      cardsEl.innerHTML = `<div class="empty"><div class="glyph">${icons.pin}</div><strong>Nothing marked yet.</strong><br>Ask your agent a question, or select text on a page.<code>pdfpin mark --json '{"title": "…",\n  "flow": "…", "highlights": [{"text": "…", "note": "…"}]}'</code></div>`;
+      cardsEl.innerHTML = `<div class="empty"><div class="glyph">${icons.pin}</div><strong>${t('panel.empty')}</strong>${t('panel.emptyHint')}<code>pdfpin mark --json '{"title": "…",\n  "flow": "…", "highlights": [{"text": "…", "note": "…"}]}'</code></div>`;
       cardsEl.querySelector('.glyph svg').style.cssText = 'width:34px;height:34px;stroke:currentColor;fill:none;stroke-width:1.5';
       return;
     }
@@ -79,12 +80,12 @@ export function initPanel({ docApi, viewer, highlights }) {
       shown++;
       const sec = document.createElement('section');
       sec.className = 'session loose';
-      sec.innerHTML = `<div class="session-head static"><div class="session-title">Your highlights</div><div class="session-meta">${loose.length} by hand</div></div><div class="session-body"></div>`;
+      sec.innerHTML = `<div class="session-head static"><div class="session-title">${t('panel.yourHighlights')}</div><div class="session-meta">${t('panel.byHandCount', { n: loose.length })}</div></div><div class="session-body"></div>`;
       const body = sec.querySelector('.session-body');
       loose.forEach((a) => body.appendChild(card(a, null)));
       cardsEl.appendChild(sec);
     }
-    if (!shown) cardsEl.innerHTML = '<div class="empty">Nothing matches the current filter.</div>';
+    if (!shown) cardsEl.innerHTML = `<div class="empty">${t('panel.noMatch')}</div>`;
   }
 
   function sessionEl(s, items, shownItems, i) {
@@ -99,12 +100,12 @@ export function initPanel({ docApi, viewer, highlights }) {
         <span class="chev">${icons.chevron}</span>
         <div class="session-main">
           <div class="session-title"></div>
-          <div class="session-meta"><span class="dots">${dots}</span><span>${items.length} highlight${items.length === 1 ? '' : 's'}</span><span>·</span><span title="${esc(s.createdAt)}">${relative(s.createdAt)}</span>${s.id === state.currentSessionId ? '<span class="cur">current</span>' : ''}${s.source === 'user' ? '<span>· by hand</span>' : ''}</div>
+          <div class="session-meta"><span class="dots">${dots}</span><span>${t('session.highlights', { n: items.length })}</span><span>·</span><span title="${esc(s.createdAt)}">${relative(s.createdAt)}</span>${s.id === state.currentSessionId ? `<span class="cur">${t('session.current')}</span>` : ''}${s.source === 'user' ? `<span>· ${t('session.byHand')}</span>` : ''}</div>
         </div>
         <span class="session-actions">
-          <button class="icon-btn act-focus" title="Show only this session on the pages" aria-pressed="${state.filter.session === s.id}">${icons.eye}</button>
-          <button class="icon-btn act-sedit" title="Edit title and overview">${icons.edit}</button>
-          <button class="icon-btn act-sdel" title="Delete session…">${icons.trash}</button>
+          <button class="icon-btn act-focus" title="${t('session.focus')}" aria-pressed="${state.filter.session === s.id}">${icons.eye}</button>
+          <button class="icon-btn act-sedit" title="${t('session.edit')}">${icons.edit}</button>
+          <button class="icon-btn act-sdel" title="${t('session.delete')}">${icons.trash}</button>
           <span class="icon-btn fold" aria-hidden="true">${icons.chevron}</span>
         </span>
       </div>
@@ -112,7 +113,7 @@ export function initPanel({ docApi, viewer, highlights }) {
         <div class="session-flow md"></div>
         <div class="session-groups"></div>
       </div>`;
-    sec.querySelector('.session-title').textContent = s.title || 'Untitled session';
+    sec.querySelector('.session-title').textContent = s.title || t('session.untitled');
     const flow = sec.querySelector('.session-flow');
     if (s.flow) flow.innerHTML = renderMarkdown(s.flow); else flow.remove();
     if (editingSession === s.id) openSessionEditor(sec, s);
@@ -144,12 +145,12 @@ export function initPanel({ docApi, viewer, highlights }) {
     el.tabIndex = 0;
     el.innerHTML = `
       <div class="card-meta">
-        ${n ? `<span class="idx">${n}</span>` : ''}<span class="pg">p.${a.page}</span>${a.tag ? '<span class="tag"></span>' : ''}${a.source === 'user' ? '<span class="src">by hand</span>' : ''}${a.score < 0.999 ? `<span class="src" title="fuzzy match">~${Math.round(a.score * 100)}%</span>` : ''}
+        ${n ? `<span class="idx">${n}</span>` : ''}<span class="pg">p.${a.page}</span>${a.tag ? '<span class="tag"></span>' : ''}${a.source === 'user' ? `<span class="src">${t('session.byHand')}</span>` : ''}${a.score < 0.999 ? `<span class="src" title="${t('card.fuzzy')}">~${Math.round(a.score * 100)}%</span>` : ''}
         <span class="spacer"></span>
         <span class="card-actions">
-          <button class="icon-btn act-copy" title="Copy as citation">${icons.copy}</button>
-          <button class="icon-btn act-edit" title="Edit note">${icons.edit}</button>
-          <button class="icon-btn act-del" title="Delete">${icons.trash}</button>
+          <button class="icon-btn act-copy" title="${t('card.copy')}">${icons.copy}</button>
+          <button class="icon-btn act-edit" title="${t('card.edit')}">${icons.edit}</button>
+          <button class="icon-btn act-del" title="${t('card.delete')}">${icons.trash}</button>
         </span>
       </div>
       ${a.quote ? '<p class="card-quote"></p>' : ''}
@@ -172,10 +173,10 @@ export function initPanel({ docApi, viewer, highlights }) {
     const ta = document.createElement('textarea');
     ta.className = 'card-edit';
     ta.value = a.note || '';
-    ta.placeholder = 'Note (Markdown)…';
+    ta.placeholder = t('card.notePlaceholder');
     const row = document.createElement('div');
     row.className = 'card-edit-row';
-    row.innerHTML = '<button class="btn act-cancel">Cancel</button><button class="btn primary act-save">Save</button>';
+    row.innerHTML = `<button class="btn act-cancel">${t('common.cancel')}</button><button class="btn primary act-save">${t('common.save')}</button>`;
     note.append(ta, row);
     ta.focus();
     ta.onkeydown = (e) => {
@@ -196,7 +197,7 @@ export function initPanel({ docApi, viewer, highlights }) {
     const body = sec.querySelector('.session-body');
     const box = document.createElement('div');
     box.className = 'session-editor';
-    box.innerHTML = `<input class="session-edit-title" placeholder="Title (the question or purpose)"><textarea class="card-edit" placeholder="Overview (Markdown): what was found, how it connects, caveats"></textarea><div class="card-edit-row"><button class="btn act-scancel">Cancel</button><button class="btn primary act-ssave">Save</button></div>`;
+    box.innerHTML = `<input class="session-edit-title" placeholder="${t('session.titlePlaceholder')}"><textarea class="card-edit" placeholder="${t('session.flowPlaceholder')}"></textarea><div class="card-edit-row"><button class="btn act-scancel">${t('common.cancel')}</button><button class="btn primary act-ssave">${t('common.save')}</button></div>`;
     box.querySelector('input').value = s.title || '';
     box.querySelector('textarea').value = s.flow || '';
     sec.querySelector('.session-flow')?.remove();
@@ -220,22 +221,24 @@ export function initPanel({ docApi, viewer, highlights }) {
   async function removeWithUndo(a) {
     const snapshot = { page: a.page, anchor: a.anchor, rects: a.rects, quote: a.quote, note: a.note, title: a.title, color: a.color, tag: a.tag, source: a.source, sessionId: a.sessionId };
     try { await docApi.remove(a.id); } catch (err) { toast(err.message, { error: true }); return; }
-    toast('Highlight deleted', {
-      color: a.color, duration: 7000, action: 'Undo',
-      onAction: async () => { try { await docApi.add(snapshot); } catch (err) { toast(`Could not restore: ${err.message}`, { error: true }); } },
+    toast(t('card.deleted'), {
+      color: a.color, duration: 7000, action: t('card.undo'),
+      onAction: async () => { try { await docApi.add(snapshot); } catch (err) { toast(t('card.restoreFailed', { message: err.message }), { error: true }); } },
     });
   }
 
   async function deleteSession(s) {
     const n = state.annotations.size ? [...state.annotations.values()].filter((a) => a.sessionId === s.id).length : 0;
+    const title = s.title || t('session.untitled');
     const ok = await confirmDialog({
-      title: 'Delete this session?',
-      body: `<p><strong>${esc(s.title || 'Untitled session')}</strong></p><p>${n ? `Its <strong>${n} highlight${n > 1 ? 's' : ''}</strong> and notes will be removed from the document.` : 'It has no highlights.'}</p>`,
-      confirmText: n ? `Delete session and ${n} highlight${n > 1 ? 's' : ''}` : 'Delete session',
+      title: t('session.deleteTitle'),
+      body: `<p><strong>${esc(title)}</strong></p><p>${n ? t('session.deleteBodyWith', { n }) : t('session.deleteBodyEmpty')}</p>`,
+      confirmText: n ? t('session.deleteConfirm', { n }) : t('session.deleteConfirmEmpty'),
+      cancelText: t('common.cancel'),
       danger: true,
     });
     if (!ok) return;
-    try { await docApi.removeSession(s.id); toast(`Deleted “${s.title || 'Untitled session'}”`, { duration: 2500 }); }
+    try { await docApi.removeSession(s.id); toast(t('session.deleted', { title }), { duration: 2500 }); }
     catch (err) { toast(err.message, { error: true }); }
   }
 
@@ -280,23 +283,23 @@ export function initPanel({ docApi, viewer, highlights }) {
   async function copyCitation(a) {
     const title = state.doc?.title || 'document';
     const md = `> ${a.quote}\n> — *${title}*, p. ${a.page}${a.note ? `\n\n${a.note}` : ''}`;
-    try { await navigator.clipboard.writeText(md); toast('Citation copied', { color: a.color, duration: 1800 }); } catch { toast('Clipboard unavailable', { error: true }); }
+    try { await navigator.clipboard.writeText(md); toast(t('card.citationCopied'), { color: a.color, duration: 1800 }); } catch { toast(t('card.clipboardUnavailable'), { error: true }); }
   }
 
   document.getElementById('copy-all-btn').innerHTML = icons.copy;
   document.getElementById('copy-all-btn').onclick = async () => {
     const list = visibleAnnotations();
-    if (!list.length) return toast('Nothing to copy');
+    if (!list.length) return toast(t('card.nothingToCopy'));
     const title = state.doc?.title || 'document';
     let md = `# ${title}\n\n`;
     const groups = [...state.sessions].reverse().map((s) => ({ s, items: list.filter((a) => a.sessionId === s.id) })).filter((g) => g.items.length);
     const loose = list.filter((a) => !sessionOf(a));
     if (loose.length) groups.push({ s: null, items: loose });
     for (const { s, items } of groups) {
-      md += `## ${s ? s.title || 'Untitled session' : 'Other highlights'}\n\n${s?.flow ? `${s.flow}\n\n` : ''}`;
+      md += `## ${s ? s.title || t('session.untitled') : t('panel.yourHighlights')}\n\n${s?.flow ? `${s.flow}\n\n` : ''}`;
       items.forEach((a, i) => { md += `### ${i + 1}. p.${a.page}${a.tag ? ` · #${a.tag}` : ''}\n\n> ${a.quote}\n\n${a.title ? `**${a.title}** ` : ''}${a.note || ''}\n\n`; });
     }
-    try { await navigator.clipboard.writeText(md); toast(`Copied ${list.length} highlights as Markdown`, { duration: 2200 }); } catch { toast('Clipboard unavailable', { error: true }); }
+    try { await navigator.clipboard.writeText(md); toast(t('card.copiedAll', { n: list.length }), { duration: 2200 }); } catch { toast(t('card.clipboardUnavailable'), { error: true }); }
   };
 
   // export menu
@@ -317,7 +320,7 @@ export function initPanel({ docApi, viewer, highlights }) {
     menu.hidden = true;
     try {
       const r = await docApi.export(b.dataset.format);
-      toast(`Exported ${r.count} highlight(s) → ${r.path}`, { duration: 9000 });
+      toast(t('export.done', { n: r.count, path: r.path }), { duration: 9000 });
     } catch (err) { toast(err.message, { error: true }); }
   });
 
@@ -352,12 +355,12 @@ export function initPanel({ docApi, viewer, highlights }) {
 }
 
 function relative(iso) {
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return '';
-  const s = Math.round((Date.now() - t) / 1000);
-  if (s < 60) return 'just now';
-  if (s < 3600) return `${Math.round(s / 60)} min ago`;
-  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-  if (s < 7 * 86400) return `${Math.round(s / 86400)} d ago`;
-  return new Date(t).toLocaleDateString();
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return '';
+  const s = Math.round((Date.now() - ms) / 1000);
+  if (s < 60) return t('time.now');
+  if (s < 3600) return t('time.min', { n: Math.round(s / 60) });
+  if (s < 86400) return t('time.hour', { n: Math.round(s / 3600) });
+  if (s < 7 * 86400) return t('time.day', { n: Math.round(s / 86400) });
+  return new Date(ms).toLocaleDateString();
 }

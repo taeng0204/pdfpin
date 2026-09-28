@@ -31,6 +31,8 @@ pdfpin list · pdfpin rm <id> · pdfpin clear --tag claim-1
 pdfpin focus <id>                           # scroll the viewer to a highlight
 pdfpin export                               # paper.annotated.pdf with real highlight annotations
 pdfpin export --format md                   # Markdown report
+pdfpin settings                             # language, theme, palette, shortcuts
+pdfpin settings language=ko keys.history=mod+e
 pdfpin status · pdfpin stop
 ```
 
@@ -44,10 +46,13 @@ pdfpin status · pdfpin stop
 - Evidence strip: a minimap of highlights along the right edge; click to jump.
 - Search in the document (`⌘/Ctrl+F`), zoom (`⌘/Ctrl +/−/0`, ctrl+wheel), fit width / fit page.
 - Select text on a page → floating toolbar → highlight in a colour, optionally with a note.
-- Light / dark theme (`d`), dimmed pages in dark mode, hide highlights (`h`).
+- Light / dark theme (`d`) or follow the system, dimmed pages in dark mode, hide highlights (`h`).
+- Pages render, load their fonts and build their text layers only near the viewport, so a long PDF
+  opens as fast as a short one. Search runs on the page index rather than on the DOM.
 - `←` / `→` turn one page; `n` / `p` step through highlights.
-- History panel (`⌘H` / `Ctrl+H`, or `t`) and Documents drawer (`⌘D` / `Ctrl+D`, or `l`).
-  On macOS the system takes plain `⌘H`, so the History panel answers to `⌘⇧H`.
+- Settings sheet at `⌘,` / `Ctrl+,`: language (English or 한국어), theme, opening zoom, which colours
+  the palette uses, and every shortcut. Settings live on the daemon, so all windows and the CLI agree.
+- History panel at `⌘J` / `Ctrl+J` and Documents drawer at `⌘D` / `Ctrl+D`, both rebindable.
 - Documents drawer (`⌘D`, `l`, or the library button): every PDF opened so far with its note count, tags and
   latest session; click one to open it instantly (it also becomes the CLI's current document).
 - Twelve highlight colours; a tag keeps one colour across a document and a new tag takes the next free one.

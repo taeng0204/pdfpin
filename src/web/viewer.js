@@ -1,7 +1,7 @@
 // PDF rendering: page shells for every page; canvases, fonts and text layers are all built on demand
 // for the pages near the viewport and released again when they scroll away.
 import { textItems, buildPageText } from '/shared/pagetext.js';
-import { state, emit, savePref } from './state.js';
+import { state, emit } from './state.js';
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
 const GAP = 22;
@@ -116,7 +116,6 @@ function setZoom(v, mode, { keep = true } = {}) {
   const cur = v.pages[state.currentPage - 1] || v.pages[0];
   const before = cur ? (el.scrollTop - cur.el.offsetTop) / (cur.el.offsetHeight || 1) : 0;
   state.zoomMode = typeof mode === 'number' ? 'custom' : mode;
-  savePref('zoom', state.zoomMode === 'custom' ? 'fit-width' : state.zoomMode);
   applyScale(v, computeScale(v, mode));
   if (keep && cur) el.scrollTop = cur.el.offsetTop + before * cur.el.offsetHeight;
   for (const ps of v.pages) if (ps.visible) renderCanvas(v, ps);

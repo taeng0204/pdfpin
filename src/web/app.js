@@ -10,23 +10,70 @@ import { initSelection } from './selection.js';
 import { initStrip } from './strip.js';
 import { initKeys } from './keys.js';
 import { initHistory } from './history.js';
+import { openSettings } from './settings-ui.js';
+import { t, setLanguage } from './i18n.js';
+import { formatBinding } from './shortcuts.js';
 import { connectEvents } from './sse.js';
 import { toast } from './toast.js';
 import { icons } from './icons.js';
 
 const $ = (id) => document.getElementById(id);
-export const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-/** Human label for a shortcut, e.g. "⌘⇧H" on macOS and "Ctrl+Shift+H" elsewhere. */
-const key = (k, { shift = false } = {}) => (IS_MAC ? `⌘${shift ? '⇧' : ''}${k}` : `Ctrl+${shift ? 'Shift+' : ''}${k}`);
+const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+const keyFor = (action) => formatBinding(state.settings?.keys?.[action]);
 const root = document.documentElement;
 const app = $('app');
 
 function applyTheme() {
+  const wanted = state.settings?.theme ?? 'system';
+  state.theme = wanted === 'system' ? (darkQuery.matches ? 'dark' : 'light') : wanted;
+  state.dim = state.settings?.dimPages ?? true;
   root.dataset.theme = state.theme;
   root.classList.toggle('dim-pages', state.theme === 'dark' && state.dim);
   $('theme-toggle').innerHTML = state.theme === 'dark' ? icons.sun : icons.moon;
   $('dim-row').hidden = state.theme !== 'dark';
   $('dim-toggle').checked = state.dim;
+}
+darkQuery.addEventListener('change', () => { if ((state.settings?.theme ?? 'system') === 'system') applyTheme(); });
+
+/** Labels that live in the shell rather than in a rendered list. */
+function applyStrings() {
+  const set = (id, attr, value) => { const el = $(id); if (el) el[attr] = value; };
+  document.title = state.doc ? `${state.doc.title} · pdfpin` : 'pdfpin';
+  set('loading-text', 'textContent', $('loading').hidden ? '' : t('app.loading'));
+  set('search-input', 'placeholder', t('top.searchPlaceholder'));
+  set('filter-input', 'placeholder', t('panel.filter'));
+  set('history-filter', 'placeholder', t('docs.filter'));
+  set('search-open', 'title', t('top.search', { key: keyFor('search') }));
+  set('search-prev', 'title', t('top.prev'));
+  set('search-next', 'title', t('top.next'));
+  set('search-close', 'title', t('top.close'));
+  set('zoom-in', 'title', t('top.zoomIn', { key: keyFor('zoomIn') }));
+  set('zoom-out', 'title', t('top.zoomOut', { key: keyFor('zoomOut') }));
+  set('zoom-label', 'title', t('top.zoomReset', { key: keyFor('zoomReset') }));
+  set('fit-toggle', 'title', t('top.fit'));
+  set('theme-toggle', 'title', t('top.theme', { key: keyFor('theme') }));
+  set('settings-toggle', 'title', t('top.settings', { key: keyFor('settings') }));
+  set('history-toggle', 'title', t('top.documents', { key: keyFor('documents') }));
+  set('panel-toggle', 'title', t('top.history', { key: keyFor('history') }));
+  set('drawer-close', 'title', t('top.close'));
+  set('export-btn', 'title', t('panel.export'));
+  set('copy-all-btn', 'title', t('panel.copyAll'));
+  set('page-input', 'ariaLabel', t('top.currentPage'));
+  const brand = document.querySelector('.brand');
+  if (brand) brand.title = t('top.home');
+  const heads = document.querySelectorAll('.panel-heading');
+  if (heads[0]) heads[0].textContent = t('panel.heading');
+  const drawerHead = document.querySelector('#drawer .panel-heading');
+  if (drawerHead) drawerHead.textContent = t('docs.heading');
+  const dimLabel = document.querySelector('#dim-row span');
+  if (dimLabel) dimLabel.textContent = t('panel.dimPages');
+  const hint = document.querySelector('.panel-foot .hint');
+  if (hint) hint.textContent = t('panel.hint', { prev: keyFor('prevHighlight'), next: keyFor('nextHighlight') });
+  const foot = document.querySelector('.drawer-foot');
+  if (foot) foot.innerHTML = t('docs.foot');
+  const menu = $('export-menu');
+  if (menu) menu.innerHTML = `<button data-format="pdf">${t('export.pdf')} <small>${t('export.pdfHint')}</small></button><button data-format="md">${t('export.md')} <small>${t('export.mdHint')}</small></button>`;
+  emit('strings');
 }
 function applyPanel() {
   app.classList.toggle('panel-closed', !state.panelOpen);
@@ -35,18 +82,28 @@ function applyPanel() {
 
 async function boot() {
   mark('boot');
+  try {
+    state.settings = (await api('GET', '/api/settings')).settings;
+  } catch {
+    state.settings = null; // the daemon answered oddly; fall back to built-in defaults
+  }
+  setLanguage(state.settings?.language);
+  state.zoomMode = state.settings?.zoom ?? 'fit-width';
   const m = location.pathname.match(/^\/view\/([^/]+)/);
   let doc;
   try {
     const r = m ? await api('GET', `/api/docs/${m[1]}`) : await api('GET', '/api/docs/current');
     doc = r.doc;
   } catch (e) {
-    $('loading-text').textContent = e.status === 404 ? 'No document is open. Pick one from the history, or run `pdfpin open <file.pdf>` in a terminal.' : `Cannot load document: ${e.message}`;
+    $('loading-text').textContent = e.status === 404 ? t('app.noDocument') : t('app.loadFailed', { message: e.message });
     $('doc-title').textContent = 'pdfpin';
     applyTheme();
     applyPanel();
     $('panel-toggle').innerHTML = icons.panel;
+    $('settings-toggle').innerHTML = icons.settings;
+    $('settings-toggle').onclick = openSettings;
     const documents = initHistory();
+    applyStrings();
     if (e.status === 404) documents.open();
     return;
   }
@@ -65,6 +122,7 @@ async function boot() {
   // icons
   $('zoom-out').innerHTML = icons.minus; $('zoom-in').innerHTML = icons.plus;
   $('panel-toggle').innerHTML = icons.panel;
+  $('settings-toggle').innerHTML = icons.settings;
   $('fit-toggle').innerHTML = state.zoomMode === 'fit-page' ? icons.fitWidth : icons.fitPage;
 
   const viewer = await initViewer({ viewerEl: $('viewer'), pagesEl: $('pages'), fileUrl: doc.fileUrl });
@@ -77,20 +135,33 @@ async function boot() {
   initStrip({ viewer });
 
   const documents = initHistory();
+  const saveSettings = async (patch) => {
+    try {
+      state.settings = (await api('PATCH', '/api/settings', patch)).settings;
+      applySettings();
+    } catch (e) { toast(t('settings.saveFailed', { message: e.message }), { error: true }); }
+  };
   const ui = {
     toggleDocuments() { documents.isOpen() ? documents.close() : documents.open(); },
     toggleHistory() { state.panelOpen = !state.panelOpen; savePref('panel', state.panelOpen); applyPanel(); },
-    toggleTheme() { state.theme = state.theme === 'dark' ? 'light' : 'dark'; savePref('theme', state.theme); applyTheme(); },
+    toggleTheme() { saveSettings({ theme: state.theme === 'dark' ? 'light' : 'dark' }); },
     toggleHighlights() { app.classList.toggle('hide-highlights'); },
+    openSettings,
   };
+  function applySettings() {
+    const change = () => { setLanguage(state.settings?.language); applyTheme(); applyStrings(); panel.renderAll(); };
+    // A theme flip repaints everything, so cross-fade it when the browser can.
+    if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(change);
+    else change();
+  }
+  on('settings', applySettings);
   initKeys({ viewer, search, ui });
 
   // top bar wiring
   $('theme-toggle').onclick = ui.toggleTheme;
   $('panel-toggle').onclick = ui.toggleHistory;
-  $('history-toggle').title = `Documents (${key('D')})`;
-  $('panel-toggle').title = `History (${key('H', { shift: IS_MAC })})`;
-  $('dim-toggle').onchange = (e) => { state.dim = e.target.checked; savePref('dim', state.dim); applyTheme(); };
+  $('settings-toggle').onclick = openSettings;
+  $('dim-toggle').onchange = (e) => saveSettings({ dimPages: e.target.checked });
   $('zoom-in').onclick = () => viewer.zoomStep(1);
   $('zoom-out').onclick = () => viewer.zoomStep(-1);
   $('zoom-label').onclick = () => viewer.setZoom('fit-width');
@@ -111,6 +182,7 @@ async function boot() {
 
   mark('ready');
   // sessions + annotations (older sessions start folded; the latest stays open)
+  applyStrings();
   setSessions(doc.sessions || [], doc.currentSessionId);
   for (const s of state.sessions.slice(0, -1)) state.collapsed.add(s.id);
   setAnnotations(doc.annotations);
@@ -127,8 +199,8 @@ async function boot() {
     const pages = [...new Set(list.map((a) => a.page))].sort((a, b) => a - b);
     const where = pages.length > 4 ? `p.${pages[0]}–${pages[pages.length - 1]}` : pages.map((p) => `p.${p}`).join(', ');
     const s = list[0].sessionId ? state.sessions.find((x) => x.id === list[0].sessionId) : null;
-    const label = `${list.length === 1 ? 'New highlight' : `${list.length} new highlights`} · ${where}${s?.title ? ` · ${s.title.slice(0, 40)}` : ''}`;
-    toast(label, { color: list[0].color, action: 'Show', onAction: () => select(list[0].id, { from: 'toast' }) });
+    const label = list.length === 1 ? t('toast.newHighlight', { where }) : t('toast.newHighlights', { n: list.length, where });
+    toast(`${label}${s?.title ? ` · ${s.title.slice(0, 40)}` : ''}`, { color: list[0].color, action: t('toast.show'), onAction: () => select(list[0].id, { from: 'toast' }) });
   };
   const daemonPid = (await api('GET', '/api/health').catch(() => ({}))).pid;
   const resync = async () => {
@@ -162,7 +234,7 @@ async function boot() {
       state.collapsed.delete(session.id);
       state.currentSessionId = session.id;
       upsertSession(session);
-      toast(`New session: ${session.title || 'untitled'}`, { duration: 4000 });
+      toast(t('session.new', { title: session.title || t('session.untitled') }), { duration: 4000 });
     },
     'session.updated': ({ session }) => upsertSession(session),
     'session.removed': ({ id, currentSessionId }) => { state.currentSessionId = currentSessionId ?? null; dropSession(id); },
@@ -173,11 +245,12 @@ async function boot() {
       else if (page) viewer.scrollToPage(page);
       if (!document.hasFocus()) window.focus?.();
     },
-    'doc.reloaded': () => { toast('The PDF changed on disk — reloading', { duration: 1500 }); setTimeout(() => location.reload(), 600); },
-    'doc.removed': () => { toast('This document was removed from pdfpin', { duration: 2500 }); setTimeout(() => { location.href = '/'; }, 800); },
+    'doc.reloaded': () => { toast(t('docs.reloading'), { duration: 1500 }); setTimeout(() => location.reload(), 600); },
+    'doc.removed': () => { toast(t('docs.removed'), { duration: 2500 }); setTimeout(() => { location.href = '/'; }, 800); },
     'docs.changed': () => { if (documents.isOpen()) documents.refresh(); },
+    'settings.changed': ({ settings }) => { state.settings = settings; applySettings(); },
     resync,
-  }, (s) => { const c = $('conn'); c.dataset.state = s; c.title = { open: 'Live: connected', connecting: 'Connecting…', error: 'Disconnected' }[s]; });
+  }, (s) => { const c = $('conn'); c.dataset.state = s; c.title = t(`conn.${s}`); });
 
   // hash deep link: #a_xxx or #p3
   const h = location.hash.slice(1);
@@ -185,4 +258,4 @@ async function boot() {
   else if (/^p\d+$/.test(h)) setTimeout(() => viewer.scrollToPage(Number(h.slice(1))), 300);
 }
 
-boot().catch((e) => { console.error(e); $('loading-text').textContent = `Failed: ${e.message}`; });
+boot().catch((e) => { console.error(e); $('loading-text').textContent = t('app.failed', { message: e.message }); });

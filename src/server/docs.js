@@ -5,9 +5,9 @@ import { openPdf, closePdf, getPageIndex, offsetsToAnchor, anchorToOffsets, appr
 import { search, rankByOverlap } from '../shared/matcher.js';
 import { docIdFor } from './store.js';
 import { revealFile } from './reveal.js';
+import { COLORS } from './palette.js';
 
-// Ordered so the first tags in a document get the most distinguishable colours.
-export const COLORS = ['yellow', 'green', 'blue', 'pink', 'purple', 'orange', 'teal', 'red', 'cyan', 'lime', 'indigo', 'grape'];
+export { COLORS } from './palette.js';
 export const MAX_QUERY = 2000; // characters; keeps the fuzzy DP bounded
 const MAX_OPEN_PDFS = 8;       // pdf.js documents kept in memory (LRU)
 
@@ -29,9 +29,10 @@ export class ApiError extends Error {
 const collapse = (s) => s.replace(/\s+/g, ' ').trim();
 
 export class DocManager {
-  constructor(store, hub) {
+  constructor(store, hub, settings = null) {
     this.store = store;
     this.hub = hub;
+    this.settings = settings;
     this.pdfs = new Map(); // docId -> { pdf, mtimeMs }
   }
 
@@ -163,8 +164,9 @@ export class DocManager {
     const anns = this.store.get(doc.id)?.annotations ?? [];
     const same = anns.find((a) => a.tag === tag && a.color);
     if (same) return same.color;
+    const palette = this.settings?.get().palette ?? COLORS;
     const taken = new Set(anns.filter((a) => a.tag).map((a) => a.color));
-    return COLORS.find((c) => !taken.has(c)) ?? COLORS[taken.size % COLORS.length];
+    return palette.find((c) => !taken.has(c)) ?? palette[taken.size % palette.length];
   }
 
   _validateCommon(spec) {

@@ -5,20 +5,7 @@ import { PDFDocument, PDFName, PDFArray, PDFHexString, PDFString } from 'pdf-lib
 import { ApiError } from './docs.js';
 import { getPageIndex, toPdfRect } from './pdftext.js';
 
-const PALETTE = {
-  yellow: '#FFE066',
-  green: '#8CE99A',
-  blue: '#74C0FC',
-  pink: '#FAA2C1',
-  purple: '#B197FC',
-  orange: '#FFC078',
-  teal: '#63E6BE',
-  red: '#FFA8A8',
-  cyan: '#66D9E8',
-  lime: '#C0EB75',
-  indigo: '#91A7FF',
-  grape: '#E599F7',
-};
+import { HEX as PALETTE } from './palette.js';
 
 /** A palette colour as a PDF RGB triple (0-1). Unknown names fall back to yellow. */
 export const colorRgb = (name) => {

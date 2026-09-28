@@ -4,6 +4,7 @@ import { state } from './state.js';
 import { icons } from './icons.js';
 import { toast } from './toast.js';
 import { confirmDialog } from './dialog.js';
+import { t } from './i18n.js';
 
 export function initHistory() {
   const drawer = document.getElementById('drawer');
@@ -35,7 +36,7 @@ export function initHistory() {
     try {
       docs = (await historyApi.list()).docs;
     } catch (e) {
-      list.innerHTML = `<div class="hist-empty">Cannot load history: ${e.message}</div>`;
+      list.innerHTML = `<div class="hist-empty">${t('docs.loadFailed', { message: e.message })}</div>`;
       return;
     }
     render();
@@ -46,8 +47,8 @@ export function initHistory() {
     const rows = docs.filter((d) => !q || `${d.title} ${d.path} ${d.latestSession} ${d.tags.join(' ')}`.toLowerCase().includes(q));
     count.textContent = docs.length;
     list.innerHTML = '';
-    if (!docs.length) { list.innerHTML = '<div class="hist-empty">No documents yet.<br>Open one with <code>pdfpin open file.pdf</code>.</div>'; return; }
-    if (!rows.length) { list.innerHTML = '<div class="hist-empty">Nothing matches.</div>'; return; }
+    if (!docs.length) { list.innerHTML = `<div class="hist-empty">${t('docs.empty')}</div>`; return; }
+    if (!rows.length) { list.innerHTML = `<div class="hist-empty">${t('docs.noMatch')}</div>`; return; }
     let group = '';
     rows.forEach((d, i) => {
       const g = bucket(d.openedAt);
@@ -62,30 +63,30 @@ export function initHistory() {
     el.dataset.id = d.id;
     el.tabIndex = 0;
     el.style.animationDelay = `${Math.min(i, 10) * 25}ms`;
-    el.title = d.exists ? d.path : `File not found: ${d.path}`;
-    const notes = d.annotationCount ? `<span class="notes">${d.annotationCount} note${d.annotationCount > 1 ? 's' : ''}</span>` : '<span>no notes</span>';
+    el.title = d.exists ? d.path : t('docs.missing', { path: d.path });
+    const notes = d.annotationCount ? `<span class="notes">${t('docs.notes', { n: d.annotationCount })}</span>` : `<span>${t('docs.noNotes')}</span>`;
     const tags = d.tags.slice(0, 4).map(() => '<span class="tag"></span>').join('');
     el.innerHTML = `
       <div class="hist-icon">${d.exists ? icons.file : icons.warn}</div>
       <div class="hist-main">
         <div class="hist-title"></div>
         <div class="hist-path"></div>
-        <div class="hist-meta"><span>${d.pages} pages</span>${notes}<span>${relative(d.openedAt)}</span>${tags}</div>
+        <div class="hist-meta"><span>${t('docs.pages', { n: d.pages })}</span>${notes}<span>${relative(d.openedAt)}</span>${tags}</div>
         ${d.latestSession ? '<div class="hist-summary"></div>' : ''}
       </div>
       <div class="hist-actions">
-        <button class="icon-btn act-reveal" title="Show in folder">${icons.folder}</button>
-        <button class="icon-btn act-remove" title="Forget this document…">${icons.trash}</button>
+        <button class="icon-btn act-reveal" title="${t('docs.reveal')}">${icons.folder}</button>
+        <button class="icon-btn act-remove" title="${t('docs.forget')}">${icons.trash}</button>
       </div>`;
     el.querySelector('.hist-title').textContent = d.title;
     el.querySelector('.hist-path').textContent = shortPath(d.path);
     el.querySelectorAll('.hist-meta .tag').forEach((t, k) => { t.textContent = d.tags[k]; });
-    if (d.latestSession) el.querySelector('.hist-summary').textContent = `${d.sessionCount > 1 ? `${d.sessionCount} sessions · latest: ` : ''}${d.latestSession}`;
+    if (d.latestSession) el.querySelector('.hist-summary').textContent = d.sessionCount > 1 ? t('docs.sessionsLatest', { n: d.sessionCount, title: d.latestSession }) : d.latestSession;
     return el;
   }
 
   async function openDoc(d) {
-    if (!d.exists) { toast(`File not found: ${d.path}`, { error: true }); return; }
+    if (!d.exists) { toast(t('docs.missing', { path: d.path }), { error: true }); return; }
     if (d.id === state.docId) { close(); return; }
     try { await historyApi.activate(d.id); } catch { /* opening still works without activation */ }
     location.href = `/view/${d.id}`;
@@ -112,17 +113,17 @@ export function initHistory() {
     const n = d.annotationCount;
     const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const ok = await confirmDialog({
-      title: 'Forget this document?',
-      body: `<p><strong>${esc(d.title)}</strong></p>` +
-        `<p>${n ? `Its <strong>${n} note${n > 1 ? 's' : ''}</strong> and highlights will be deleted.` : 'It has no notes.'} The PDF file itself stays where it is.</p>` +
-        (n ? '<p class="muted">Tip: export first if you want to keep the notes (panel → download icon).</p>' : ''),
-      confirmText: n ? `Delete ${n} note${n > 1 ? 's' : ''} and forget` : 'Forget',
+      title: t('docs.forgetTitle'),
+      body: `<p><strong>${esc(d.title)}</strong></p><p>${n ? t('docs.forgetBodyWith', { n }) : t('docs.forgetBodyEmpty')}</p>` +
+        (n ? `<p class="muted">${t('docs.forgetTip')}</p>` : ''),
+      confirmText: n ? t('docs.forgetConfirm', { n }) : t('docs.forgetConfirmEmpty'),
+      cancelText: t('common.cancel'),
       danger: true,
     });
     if (!ok) return;
     try {
       await historyApi.remove(d.id);
-      toast(`Forgot “${d.title}”`, { duration: 2500 });
+      toast(t('docs.forgot', { title: d.title }), { duration: 2500 });
       if (d.id === state.docId) { location.href = '/'; return; }
       await refresh();
     } catch (err) { toast(err.message, { error: true }); }
@@ -161,25 +162,24 @@ function shortPath(p) {
 }
 
 function bucket(iso) {
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return 'Earlier';
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return t('time.earlier');
   const now = new Date();
-  const d = new Date(t);
-  const sameDay = d.toDateString() === now.toDateString();
-  if (sameDay) return 'Today';
+  const d = new Date(ms);
+  if (d.toDateString() === now.toDateString()) return t('time.today');
   const y = new Date(now); y.setDate(now.getDate() - 1);
-  if (d.toDateString() === y.toDateString()) return 'Yesterday';
-  if (now - t < 7 * 86400e3) return 'This week';
-  return 'Earlier';
+  if (d.toDateString() === y.toDateString()) return t('time.yesterday');
+  if (now - ms < 7 * 86400e3) return t('time.thisWeek');
+  return t('time.earlier');
 }
 
 function relative(iso) {
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return '';
-  const s = Math.round((Date.now() - t) / 1000);
-  if (s < 60) return 'just now';
-  if (s < 3600) return `${Math.round(s / 60)} min ago`;
-  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-  if (s < 7 * 86400) return `${Math.round(s / 86400)} d ago`;
-  return new Date(t).toLocaleDateString();
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return '';
+  const s = Math.round((Date.now() - ms) / 1000);
+  if (s < 60) return t('time.now');
+  if (s < 3600) return t('time.min', { n: Math.round(s / 60) });
+  if (s < 86400) return t('time.hour', { n: Math.round(s / 3600) });
+  if (s < 7 * 86400) return t('time.day', { n: Math.round(s / 86400) });
+  return new Date(ms).toLocaleDateString();
 }

@@ -45,6 +45,7 @@ COMMANDS
   rm <id…> | clear [--tag t]
   focus <id> | --page N | --session <id>
   export [--out path] [--format pdf|md]          annotated PDF (real highlight annotations) or Markdown by session
+  settings [key=value...] [--reset]              language, theme, palette and shortcuts (shared by every viewer)
   docs | status | stop | guide
   All commands accept -d/--doc <id|path|file name> to target a document other than the current one.
 `;

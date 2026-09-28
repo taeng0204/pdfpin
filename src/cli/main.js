@@ -353,6 +353,43 @@ program
   });
 
 program
+  .command('settings')
+  .description('show or change viewer settings (language, theme, palette, shortcuts)')
+  .argument('[assignments...]', 'key=value pairs, e.g. language=ko palette=yellow,blue keys.history=mod+e')
+  .option('--reset', 'restore every setting to its default')
+  .option('--json', 'machine-readable output')
+  .action(async (assignments, opts) => {
+    const c = await client({ start: false });
+    if (opts.reset) {
+      const r = await c.call('DELETE', '/api/settings');
+      return opts.json ? json(r.settings) : out('settings reset');
+    }
+    if (assignments.length) {
+      const patch = {};
+      for (const a of assignments) {
+        const i = a.indexOf('=');
+        if (i < 1) throw new CliError(`Expected key=value, got "${a}"`);
+        const key = a.slice(0, i);
+        const raw = a.slice(i + 1);
+        const value = raw === 'true' ? true : raw === 'false' ? false : /^-?\d+(\.\d+)?$/.test(raw) ? Number(raw) : raw;
+        if (key === 'palette') patch.palette = String(raw).split(',').map((s) => s.trim()).filter(Boolean);
+        else if (key.startsWith('keys.')) (patch.keys ??= {})[key.slice(5)] = String(raw);
+        else patch[key] = value;
+      }
+      const r = await c.call('PATCH', '/api/settings', patch);
+      return opts.json ? json(r.settings) : out('settings updated');
+    }
+    const { settings } = await c.call('GET', '/api/settings');
+    if (opts.json) return json(settings);
+    out(`language   ${settings.language}`);
+    out(`theme      ${settings.theme}${settings.theme === 'dark' || settings.theme === 'system' ? ` (dim pages: ${settings.dimPages})` : ''}`);
+    out(`zoom       ${settings.zoom}`);
+    out(`palette    ${settings.palette.join(', ')}`);
+    out('shortcuts');
+    for (const [action, binding] of Object.entries(settings.keys)) out(`  ${action.padEnd(16)} ${binding}`);
+  });
+
+program
   .command('docs')
   .description('list documents known to the daemon')
   .option('--json', 'machine-readable output')
