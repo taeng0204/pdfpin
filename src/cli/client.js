@@ -19,13 +19,16 @@ export function readServerInfo(home = defaultHome()) {
   try { return JSON.parse(fs.readFileSync(serverInfoPath(home), 'utf8')); } catch { return null; }
 }
 
-export async function healthy(port, timeoutMs = 900) {
+export async function healthy(port, timeoutMs = 900, home = null) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const r = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: ctrl.signal });
     const j = await r.json();
-    return j?.ok === true ? j : null;
+    if (j?.ok !== true) return null;
+    // A stale record can point at someone else's daemon; talking to it would edit the wrong store.
+    if (home && j.home && path.resolve(j.home) !== path.resolve(home)) return null;
+    return j;
   } catch {
     return null;
   } finally {
@@ -41,7 +44,7 @@ export async function ensureDaemon({ home = defaultHome(), port = Number(process
   if (!info) { if (!start) return null; }
   // A daemon busy with a long job can be slow to answer. Ask again, patiently, before writing it
   // off: starting a second daemon on the same home would put two writers on one store.
-  else if ((await healthy(info.port)) || (await healthy(info.port, 5000))) return info;
+  else if ((await healthy(info.port, 900, home)) || (await healthy(info.port, 5000, home))) return info;
   if (!start) return null;
   fs.mkdirSync(home, { recursive: true });
   try { fs.unlinkSync(serverInfoPath(home)); } catch { /* no stale file */ }
@@ -56,7 +59,7 @@ export async function ensureDaemon({ home = defaultHome(), port = Number(process
   while (Date.now() < deadline) {
     await sleep(120);
     const fresh = readServerInfo(home);
-    if (fresh && (await healthy(fresh.port))) return fresh; // ours, or a sibling that won the race
+    if (fresh && (await healthy(fresh.port, 900, home))) return fresh; // ours, or a sibling that won the race
   }
   throw new CliError(`The pdfpin daemon did not start. See ${path.join(home, 'server.log')}`);
 }

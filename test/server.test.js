@@ -368,3 +368,32 @@ test('the demo document is built on request and reports whether the tour has run
 
   assert.equal((await api('PATCH', '/api/settings', { onboarded: true })).json.settings.onboarded, true);
 });
+
+test('a document id that is not a plain hex id is refused, so no path can escape the store', async () => {
+  for (const bad of ['..%5C..%5Csecret', '..%2F..%2Fsecret', 'abcdefghij', 'ba9c565da7x']) {
+    const r = await api('GET', `/api/docs/${bad}`);
+    assert.equal(r.status, 404, `${bad} should not resolve`);
+  }
+  // a real file sitting outside the store must stay unreachable, whatever separator is used
+  const { Store } = await import('../src/server/store.js');
+  const outside = path.join(handle.home, 'outside.json');
+  fs.writeFileSync(outside, JSON.stringify({ id: 'outside', secret: true, annotations: [], sessions: [] }));
+  const s = new Store(handle.home);
+  assert.equal(s.get('../outside'), null);
+  assert.equal(s.get('..\\outside'), null);
+  assert.equal(JSON.parse(fs.readFileSync(outside, 'utf8')).secret, true, 'and it is left untouched');
+});
+
+test('a state-changing request from another origin is refused', async () => {
+  const http = await import('node:http');
+  const send = (origin) => new Promise((resolve, reject) => {
+    const req = http.request(
+      { host: '127.0.0.1', port: handle.port, path: '/api/shutdown', method: 'POST', headers: { origin } },
+      (res) => { res.resume(); resolve(res.statusCode); },
+    );
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(await send('https://evil.example'), 403);
+  assert.equal(await send(`http://127.0.0.1:${handle.port + 1}`), 403);
+});

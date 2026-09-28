@@ -13,7 +13,8 @@ beside the path of the PDF they belong to.
 
 ## Install
 
-Node 18.17 or newer, on macOS, Windows or Linux. No native build step.
+Node 22.13 or newer, on macOS, Windows or Linux. No native build step.
+pdf.js 6 sets that floor; nothing else here needs it.
 
 Clone this repository, then:
 

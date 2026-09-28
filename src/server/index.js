@@ -28,6 +28,18 @@ const MIME = {
   '.map': 'application/json', '.woff2': 'font/woff2', '.pdf': 'application/pdf', '.txt': 'text/plain; charset=utf-8',
 };
 
+/** True for the viewer's own origin, or when there is no origin (curl, the CLI, a fetch from Node). */
+function isOwnOrigin(origin, portRef) {
+  if (!origin || origin === 'null') return true;
+  try {
+    const u = new URL(origin);
+    const loopback = ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(u.hostname);
+    return loopback && u.port === String(portRef.port);
+  } catch {
+    return false;
+  }
+}
+
 function send(res, status, body, headers = {}) {
   const isJson = typeof body !== 'string' && !Buffer.isBuffer(body);
   const data = isJson ? JSON.stringify(body) : body;
@@ -111,6 +123,7 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
     return { settings: value };
   };
 
+  const actualPortRef = { port: 0 };   // filled in once the socket is bound
   const routes = [];
   const route = (method, pattern, handler) => routes.push({ method, re: new RegExp(`^${pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)')}/?$`), handler });
 
@@ -205,6 +218,12 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
       // page would arrive with its own Host header and must not read documents or drive the viewer.
       const hostName = String(req.headers.host || '').replace(/:\d+$/, '').replace(/^\[(.*)\]$/, '$1');
       if (!['127.0.0.1', 'localhost', '::1'].includes(hostName)) throw new ApiError(403, 'Forbidden host');
+      // Anything that changes state must come from the viewer itself or from a tool with no origin
+      // at all, such as the CLI. A page on another site can post without a body, so the
+      // content-type guard alone would not stop it.
+      if (!['GET', 'HEAD'].includes(req.method) && !isOwnOrigin(req.headers.origin, actualPortRef)) {
+        throw new ApiError(403, 'Forbidden origin');
+      }
       const url = new URL(req.url, 'http://localhost');
       p = decodeURIComponent(url.pathname);
       if (p.startsWith('/api/')) {
@@ -255,6 +274,7 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
     throw e;
   }
   const actualPort = server.address().port;
+  actualPortRef.port = actualPort;
   const handle = {
     server, port: actualPort, host, home, store, docs, hub, settings,
     url: `http://${host}:${actualPort}`,

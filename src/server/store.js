@@ -6,6 +6,9 @@ import { COLORS } from './palette.js';
 
 const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
 
+/** Document ids are the first ten hex characters of a hash. Anything else never reaches a path. */
+export const isDocId = (id) => typeof id === 'string' && /^[0-9a-f]{10}$/.test(id);
+
 export function docIdFor(filePath) {
   const norm = path.resolve(filePath).replace(/\\/g, '/');
   const key = process.platform === 'win32' ? norm.toLowerCase() : norm;
@@ -65,6 +68,7 @@ export class Store {
   }
 
   get(id) {
+    if (!isDocId(id)) return null;
     // Trust the cache only while the file still looks like the copy we wrote. Anything else means
     // another writer touched it, and serving our stale copy would quietly undo their work.
     const file = this._file(id);

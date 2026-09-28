@@ -124,3 +124,18 @@ test('a second daemon refuses to run on a home another one already owns', async 
   const third = await createServer({ home, port: 0, lock: true });
   await third.close();
 });
+
+test('the CLI ignores a recorded port that belongs to a different home', async () => {
+  const { createServer } = await import('../src/server/index.js');
+  const mine = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfpin-mine-'));
+  const theirs = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfpin-theirs-'));
+  const other = await createServer({ home: theirs, port: 0 });
+  // a stale record in our home points at someone else's daemon
+  fs.writeFileSync(path.join(mine, 'server.json'), JSON.stringify({ port: other.port, pid: process.pid, url: `http://127.0.0.1:${other.port}` }));
+  try {
+    const { ensureDaemon } = await import('../src/cli/client.js');
+    assert.equal(await ensureDaemon({ home: mine, start: false }), null, 'it must not adopt a daemon serving another store');
+  } finally {
+    await other.close();
+  }
+});

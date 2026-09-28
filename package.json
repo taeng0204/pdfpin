@@ -28,7 +28,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=18.17"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "start": "node src/server/index.js",
