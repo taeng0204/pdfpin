@@ -48,6 +48,7 @@ passages with short notes; the human sees them live in the viewer's side panel.
 - Quote text **exactly as printed in `pdfpin text`** (5–300 characters, one page at a time; split quotes that cross pages).
   Case, whitespace and end-of-line hyphenation do not matter; small typos are tolerated.
 - Exit code 2 = something was not found. The output lists up to three nearby candidates with page numbers; retry with one.
+- If the reply says the PDF carries no text layer, stop retrying: it is a scan and no quote will ever match.
 - The same phrase can occur several times: pass `"page": N`, or `"all": true` to highlight every occurrence.
 - `flow` is the reader's overview: 2–5 sentences, refer to highlights by number (1), (2) or by tag. Notes: one or
   two sentences on *why* the passage matters. Markdown subset (`**bold**`, `*italic*`, `` `code` ``, `- lists`, links).

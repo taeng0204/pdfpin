@@ -15,8 +15,9 @@ beside the path of the PDF they belong to.
 
 Node 18.17 or newer, on macOS, Windows or Linux. No native build step.
 
+Clone this repository, then:
+
 ```bash
-git clone <this repo> && cd pdfpin
 npm install
 npm install -g .
 pdfpin open paper.pdf
@@ -46,6 +47,9 @@ pdfpin mark --json '{
 Quote exactly what `pdfpin text` printed. Matching forgives case, whitespace, end-of-line
 hyphenation and small typos; a quote that spans two pages does not resolve, so split it. When a
 quote is not found the command exits with status 2 and prints the nearest candidates.
+
+A scanned PDF has no text to quote. pdfpin says so rather than pretending the quote was wrong; run
+the file through OCR first.
 
 `pdfpin guide` prints the full command reference.
 

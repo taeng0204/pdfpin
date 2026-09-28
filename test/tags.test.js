@@ -89,3 +89,17 @@ test('bad tag operations are refused', async () => {
   assert.equal((await api('PATCH', `/api/docs/${docId}/tags/keep`, { name: '   ' })).status, 400);
   assert.equal((await api('PATCH', `/api/docs/${docId}/tags/keep`, { color: 'chartreuse' })).status, 400);
 });
+
+test('a PDF with no text layer says so instead of blaming the quote', async () => {
+  const { PDFDocument } = await import('pdf-lib');
+  const scan = await PDFDocument.create();
+  scan.addPage([300, 300]);           // a page with no text at all, like a scan
+  const file = path.join(os.tmpdir(), `pdfpin-scan-${Date.now()}.pdf`);
+  fs.writeFileSync(file, await scan.save());
+
+  const doc = (await api('POST', '/api/docs', { path: file })).json.doc;
+  const r = await api('POST', `/api/docs/${doc.id}/annotations`, { text: 'anything at all', note: '' });
+  assert.equal(r.status, 422);
+  assert.match(r.json.error, /no text/i);
+  assert.match(r.json.error, /scan/i);
+});

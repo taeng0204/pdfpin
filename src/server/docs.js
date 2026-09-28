@@ -126,6 +126,20 @@ export class DocManager {
     };
   }
 
+  /**
+   * True when the document carries no text at all, as a scan does. Deliberately strict: a sparse
+   * page is still matchable, and calling a real document a scan would be worse than saying nothing.
+   */
+  async looksScanned(doc) {
+    const pdf = await this.pdf(doc);
+    let seen = 0;
+    for (const p of parsePages(null, pdf.numPages).slice(0, 5)) {
+      seen += collapse((await getPageIndex(pdf, p)).text).length;
+      if (seen >= 20) return false;
+    }
+    return true;
+  }
+
   /** Nearest fuzzy candidates for an agent to retry with (used in 422 responses). */
   async suggestions(doc, query, page = null) {
     const pdf = await this.pdf(doc);
@@ -311,6 +325,9 @@ export class DocManager {
 
     const hits = await this.find(doc, spec.text, { page });
     if (!hits.length) {
+      if (await this.looksScanned(doc)) {
+        throw new ApiError(422, 'This PDF carries no text layer, so quotes cannot be matched in it. It is most likely a scan; run it through OCR first.', { scanned: true });
+      }
       const suggestions = await this.suggestions(doc, spec.text, page);
       throw new ApiError(422, `Text not found${page ? ` on page ${page}` : ''}: "${collapse(spec.text).slice(0, 80)}"`, { suggestions });
     }
