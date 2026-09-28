@@ -21,19 +21,19 @@ Clone this repository, then:
 ```bash
 npm install
 npm install -g .
-pdfpin skill install
 pdfpin open paper.pdf
 ```
 
 A guided tour runs the first time. It writes a one-page demo paper, asks it two questions through
 the same API an agent uses, and hands the last two steps to you. Re-run it from settings any time.
 
-`pdfpin skill install` is what teaches an agent to drive pdfpin. Claude Code and Codex read the
-same skill format, so one file goes to `~/.claude/skills/pdfpin/` and `~/.codex/skills/pdfpin/`;
-both pick it up on their next run with nothing to configure. It writes only for the agents you
-actually have — `--claude` or `--codex` installs for one regardless. `pdfpin skill` shows where it
-landed and whether it is current, `pdfpin skill remove` takes it out again, and a copy you edited
-yourself is never overwritten without `--force`.
+Installing globally also puts the agent skill in place, which is what lets an agent drive pdfpin
+at all. Claude Code and Codex read the same skill format, so one file goes to
+`~/.claude/skills/pdfpin/` and `~/.codex/skills/pdfpin/` — only for the agents you actually have —
+and both pick it up on their next run with nothing to configure. `PDFPIN_NO_SKILL=1 npm install -g .`
+skips it, `pdfpin skill` shows where it landed, `pdfpin skill install` adds or updates one
+(`--claude` or `--codex` for a single agent), and `pdfpin skill remove` takes it out again. A copy
+you edited yourself is never replaced without `--force`.
 
 Then just ask: *"find the evidence in this paper for X and highlight it."*
 

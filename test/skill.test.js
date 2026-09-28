@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { status, install, remove, sourceDir, AGENTS } from '../src/cli/skill.js';
+import { status, install, remove, sourceDir, autoInstall, pendingNotice, AGENTS } from '../src/cli/skill.js';
 
 const tmpHome = () => fs.mkdtempSync(path.join(os.tmpdir(), 'pdfpin-skill-'));
 const rowsOf = (home) => Object.fromEntries(status(home).map((r) => [r.id, r]));
@@ -77,4 +77,36 @@ test('remove takes back what it wrote and leaves anything else', () => {
   assert.equal(fs.existsSync(skillAt(row)), false);
   assert.equal(fs.readFileSync(path.join(row.dest, 'notes-of-my-own.md'), 'utf8'), 'keep me');
   assert.equal(remove(rowsOf(home).claude), 'absent');
+});
+
+test('a global install writes the skill, a build in a clone does not', () => {
+  const home = tmpHome();
+  fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
+  assert.equal(autoInstall({ env: {}, home }).skipped, 'not a global install');
+  assert.equal(autoInstall({ env: { npm_config_global: 'true', PDFPIN_NO_SKILL: '1' }, home }).skipped, 'PDFPIN_NO_SKILL is set');
+  assert.equal(rowsOf(home).claude.state, 'absent');
+
+  const env = { npm_config_global: 'true' };
+  const { results } = autoInstall({ env, home });
+  assert.deepEqual(results.map((r) => [r.target.id, r.result]), [['claude', 'installed']]);
+  assert.equal(rowsOf(home).claude.state, 'current');
+  assert.equal(autoInstall({ env, home }).results[0].result, 'current');
+});
+
+test('a machine with neither agent is left alone', () => {
+  const home = tmpHome();
+  assert.equal(autoInstall({ env: { npm_config_global: 'true' }, home }).skipped, 'no agent found on this machine');
+  assert.deepEqual(fs.readdirSync(home), []);
+});
+
+test('the skill is announced once, and only once there is something to announce', () => {
+  const home = tmpHome();
+  const pdfpinHome = path.join(home, '.pdfpin');
+  assert.equal(pendingNotice(pdfpinHome, home), null);
+  assert.equal(fs.existsSync(path.join(pdfpinHome, '.skill-notice')), false);
+
+  install(rowsOf(home).codex);
+  const notice = pendingNotice(pdfpinHome, home);
+  assert.match(notice, /Skill installed for Codex/);
+  assert.equal(pendingNotice(pdfpinHome, home), null);
 });

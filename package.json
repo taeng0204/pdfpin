@@ -30,6 +30,7 @@
     "bin",
     "src",
     "skill",
+    "scripts",
     "README.md",
     "LICENSE"
   ],
@@ -37,6 +38,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "postinstall": "node scripts/postinstall.js",
     "start": "node src/server/index.js",
     "test": "node --test \"test/**/*.test.js\""
   },

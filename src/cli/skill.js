@@ -102,3 +102,36 @@ export function remove(target, { force = false } = {}) {
   try { fs.rmdirSync(target.dest); } catch { /* something else lives there */ }
   return 'removed';
 }
+
+/**
+ * What a global install should do on its own: write the skill for every agent already on the
+ * machine, so pdfpin works from an agent the moment it is installed. A plain `npm install` in a
+ * clone is a build, not an install, so it does nothing there; `PDFPIN_NO_SKILL=1` opts out; and a
+ * copy pdfpin did not write is reported, never replaced.
+ */
+export function autoInstall({ env = process.env, home = os.homedir() } = {}) {
+  if (env.PDFPIN_NO_SKILL) return { skipped: 'PDFPIN_NO_SKILL is set' };
+  if (env.npm_config_global !== 'true') return { skipped: 'not a global install' };
+  const present = status(home).filter((t) => t.present);
+  if (!present.length) return { skipped: 'no agent found on this machine' };
+  return { results: present.map((target) => ({ target, result: install(target) })) };
+}
+
+/**
+ * npm hides what a postinstall script prints, so the skill can land in your home without you ever
+ * being told. Say it once, on the first `pdfpin open` that follows. Returns the line to print, or
+ * null; the flag is only written once there was something to say, so a skill installed later is
+ * still announced.
+ */
+export function pendingNotice(pdfpinHome, home = os.homedir()) {
+  const flag = path.join(pdfpinHome, '.skill-notice');
+  if (fs.existsSync(flag)) return null;
+  const rows = status(home).filter((t) => t.state === 'current' || t.state === 'outdated');
+  if (!rows.length) return null;
+  try {
+    fs.mkdirSync(pdfpinHome, { recursive: true });
+    fs.writeFileSync(flag, `${new Date().toISOString()}\n`);
+  } catch { return null; }
+  return `Skill installed for ${rows.map((t) => t.label).join(' and ')} — ask your agent to highlight the evidence in a PDF.\n`
+    + '`pdfpin skill` shows where it lives, `pdfpin skill remove` takes it out.';
+}

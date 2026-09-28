@@ -81,6 +81,8 @@ program
     if (opts.json) return json({ ...doc, url, launched });
     out(`Opened "${doc.title}" (${doc.pages} pages, ${doc.annotations.length} annotations) · id ${doc.id}`);
     out(`Viewer: ${url}  [${launched}]`);
+    const notice = skills.pendingNotice(home);
+    if (notice) out(`\n${notice}`);
   });
 
 program
