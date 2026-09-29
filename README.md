@@ -2,9 +2,9 @@
 
 Read a paper with an AI agent sitting next to you.
 
-You ask a question. The agent reads the PDF, marks the passages that answer it, and writes a short
-note on each one. You read the marks in the paper itself, not in a chat window that has lost sight
-of the page.
+You ask a question. The agent marks the passages that answer it and writes a short note on each
+one. Any PDF with a text layer works, not only papers, and you get there from the agent you are
+already using.
 
 ![The viewer: a paper on the left, the agent's answer on the right](https://raw.githubusercontent.com/taeng0204/pdfpin/main/docs/images/viewer-light.png)
 
