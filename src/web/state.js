@@ -22,6 +22,7 @@ export const state = {
   dim: true,
   zoomMode: 'fit-width',
   panelOpen: pref('panel', true), // a view state, not a preference worth syncing
+  groupBy: pref('groupBy', 'position') === 'tag' ? 'tag' : 'position', // marks in reading order, or gathered by tag
 };
 
 export const COLORS = ['yellow', 'green', 'blue', 'pink', 'purple', 'orange', 'teal', 'red', 'cyan', 'lime', 'indigo', 'grape'];

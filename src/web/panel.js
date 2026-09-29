@@ -1,6 +1,6 @@
 // Side panel: the document's history of sessions (newest first), each with its overview and its
 // highlights grouped by tag/colour; plus the reader's own highlights. Filters, inline editing, export.
-import { state, on, emit, select, visibleAnnotations, orderedAnnotations, sessionOf, hasFilter, COLORS } from './state.js';
+import { state, on, emit, savePref, select, visibleAnnotations, orderedAnnotations, sessionOf, hasFilter, COLORS } from './state.js';
 import { renderMarkdown } from './markdown.js';
 import { icons } from './icons.js';
 import { toast } from './toast.js';
@@ -124,6 +124,12 @@ export function initPanel({ docApi, viewer, highlights }) {
   /** Highlights split by tag, or by colour when they carry no tag. Headings appear only when they help. */
   function fillGroups(sec, items, shownItems) {
     const index = new Map(items.map((a, k) => [a.id, k + 1]));
+    const gEl = sec.querySelector('.session-groups');
+    // the order they appear in the document is the order you read them in
+    if (state.groupBy !== 'tag') {
+      for (const a of shownItems) gEl.appendChild(card(a, index.get(a.id)));
+      return;
+    }
     const groups = new Map();
     for (const a of shownItems) {
       // tags are the topic; highlights made by hand carry none, so their colour stands in for one
@@ -131,7 +137,6 @@ export function initPanel({ docApi, viewer, highlights }) {
       if (!groups.has(key)) groups.set(key, { color: a.color, label: a.tag || a.color, items: [] });
       groups.get(key).items.push(a);
     }
-    const gEl = sec.querySelector('.session-groups');
     const labelled = groups.size > 1 || [...groups.values()].some((g) => g.items[0].tag);
     for (const [, g] of groups) {
       const wrap = document.createElement('div');
@@ -415,6 +420,21 @@ export function initPanel({ docApi, viewer, highlights }) {
   const tagsBtn = document.getElementById('tags-btn');
   tagsBtn.innerHTML = icons.tag;
   tagsBtn.onclick = () => openTags(docApi);
+  const groupBtn = document.getElementById('group-btn');
+  const applyGroupBtn = () => {
+    // one icon, pressed or not: a second tag icon beside the tag manager would read as the same button
+    groupBtn.innerHTML = icons.rows;
+    groupBtn.setAttribute('aria-pressed', String(state.groupBy === 'tag'));
+    groupBtn.title = state.groupBy === 'tag' ? t('panel.orderByPosition') : t('panel.groupByTag');
+  };
+  groupBtn.onclick = () => {
+    state.groupBy = state.groupBy === 'tag' ? 'position' : 'tag';
+    savePref('groupBy', state.groupBy);
+    applyGroupBtn();
+    renderCards();
+  };
+  applyGroupBtn();
+  on('settings', applyGroupBtn);
   const archiveBtn = document.getElementById('archive-btn');
   archiveBtn.innerHTML = icons.archive;
   archiveBtn.onclick = () => openArchive(docApi);
