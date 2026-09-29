@@ -71,7 +71,7 @@ the file through OCR first.
 | | |
 |---|---|
 | `⌘D` / `Ctrl+D` | documents: open a PDF, switch between them |
-| `⌘J` / `Ctrl+J` | the notes panel |
+| `⌘E` / `Ctrl+E` | the notes panel |
 | `⌘,` / `Ctrl+,` | settings: language, theme, colours, shortcuts |
 | `o` | open a PDF through your system's file chooser |
 | `←` `→` | turn a page |

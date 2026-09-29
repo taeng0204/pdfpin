@@ -36,7 +36,7 @@ test('settings start at the defaults and persist on disk', async () => {
   assert.deepEqual(r.json.settings, DEFAULT_SETTINGS);
   assert.equal(DEFAULT_SETTINGS.language, 'auto');
   assert.equal(DEFAULT_SETTINGS.palette.length, 12);
-  assert.equal(DEFAULT_SETTINGS.keys.history, 'mod+j');
+  assert.equal(DEFAULT_SETTINGS.keys.history, 'mod+e');
   assert.equal(DEFAULT_SETTINGS.keys.settings, 'mod+,');
 });
 

@@ -36,6 +36,8 @@ export function formatBinding(binding) {
 
 // Combinations the browser or the system takes before the page can see them. They differ per
 // platform, so a binding that works on Windows can be swallowed on a Mac and the other way round.
-const MAC_RESERVED = new Set(['mod+h', 'mod+q', 'mod+m', 'mod+w', 'mod+n', 'mod+t', 'mod+e', 'mod+shift+h', 'mod+shift+n', 'mod+shift+t']);
+// ⌘E is Chrome's "Use Selection for Find", but the page is offered the key first and may keep it,
+// unlike the window and tab commands below, which never reach us.
+const MAC_RESERVED = new Set(['mod+h', 'mod+q', 'mod+m', 'mod+w', 'mod+n', 'mod+t', 'mod+shift+h', 'mod+shift+n', 'mod+shift+t']);
 const OTHER_RESERVED = new Set(['mod+n', 'mod+t', 'mod+w', 'mod+shift+n', 'mod+shift+t', 'mod+shift+w', 'mod+shift+q']);
 export const isReserved = (binding) => (IS_MAC ? MAC_RESERVED : OTHER_RESERVED).has(binding);

@@ -10,7 +10,7 @@ export const THEMES = ['system', 'light', 'dark'];
 export const DEFAULT_KEYS = {
   openDocument: 'o',
   documents: 'mod+d',
-  history: 'mod+j',
+  history: 'mod+e',
   settings: 'mod+,',
   search: 'mod+f',
   zoomIn: 'mod+=',
