@@ -480,122 +480,45 @@
 
   <section class="band">
     <div class="wrap">
-      <h2><span lang="en">How it works</span><span lang="ko">동작 방식</span></h2>
-      <p class="sub">
-        <span lang="en">Three commands. The agent never sees a screenshot of the page — it reads the text layer, quotes from it, and the viewer turns each quote back into glyph boxes on the rendered page.</span>
-        <span lang="ko">명령 세 개면 됩니다. 에이전트는 페이지 스크린샷을 보지 않습니다. 텍스트 레이어를 읽고 거기서 인용하면, 뷰어가 그 인용문을 렌더링된 페이지 위의 글자 영역으로 되돌립니다.</span>
-      </p>
-      <div class="steps">
-        <div class="step">
-          <span class="n">01</span>
-          <h3><span lang="en">Open</span><span lang="ko">열기</span></h3>
-          <p>
-            <span lang="en">Starts a daemon on loopback and a viewer window. The file stays where it is.</span>
-            <span lang="ko">루프백에 데몬을 띄우고 뷰어 창을 엽니다. 파일은 있던 자리에 그대로 있습니다.</span>
-          </p>
-          <pre><code>pdfpin open paper.pdf</code></pre>
-        </div>
-        <div class="step">
-          <span class="n">02</span>
-          <h3><span lang="en">Read</span><span lang="ko">읽기</span></h3>
-          <p>
-            <span lang="en">Page text, or a search for a phrase. On a long paper the agent reads a range, not the whole file.</span>
-            <span lang="ko">페이지 텍스트를 읽거나 문구를 찾습니다. 긴 논문에서는 전체가 아니라 필요한 범위만 읽습니다.</span>
-          </p>
-          <pre><code>pdfpin text -p 1-2
-pdfpin find <span class="str">"bias momentum"</span></code></pre>
-        </div>
-        <div class="step">
-          <span class="n">03</span>
-          <h3><span lang="en">Mark</span><span lang="ko">표시</span></h3>
-          <p>
-            <span lang="en">One question, one session: a title, an overview, and the highlights under it.</span>
-            <span lang="ko">질문 하나가 세션 하나입니다. 제목과 개요, 그 아래에 하이라이트들이 붙습니다.</span>
-          </p>
-          <pre><code>pdfpin mark --json <span class="str">'{…}'</span></code></pre>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="band">
-    <div class="wrap">
-      <h2><span lang="en">What the agent sends</span><span lang="ko">에이전트가 보내는 것</span></h2>
-      <p class="sub">
-        <span lang="en">Quote exactly what the page prints. Matching forgives case, whitespace, end-of-line hyphenation and small typos; a quote it cannot place comes back with the nearest candidates and their page numbers, so the agent can correct itself.</span>
-        <span lang="ko">지면에 인쇄된 그대로 인용하면 됩니다. 대소문자, 공백, 줄바꿈 하이픈, 작은 오타는 matching이 감안합니다. 찾지 못한 인용문은 가장 가까운 후보와 페이지 번호가 함께 돌아오므로 에이전트가 스스로 고칩니다.</span>
-      </p>
-      <pre><code>pdfpin mark --json <span class="str">'{
-  "title": "What evidence backs the speed-up claim?",
-  "flow":  "Two numbers carry it: the benchmark (1) and the median saving (2).",
-  "highlights": [
-    {"text": "a benchmark of 40 production pipelines",
-     "note": "What it was measured on.", "tag": "setup"},
-    {"text": "reduced median wall-clock time by 31%",
-     "note": "The headline number.",    "tag": "result"}
-  ]}'</span></code></pre>
-      <p class="after-code">
-        <span lang="en">Colour is left to the viewer: one colour per tag, or one per session, whichever the reader picked — and the reader can repaint a tag everywhere, or tag their own highlights with the agent's tags.</span>
-        <span lang="ko">색은 뷰어에 맡깁니다. 태그마다 한 색, 또는 세션마다 한 색 중 독자가 고른 방식으로 칠해집니다. 독자는 태그 색을 전체적으로 바꿀 수도, 자기가 그은 하이라이트에 에이전트의 태그를 붙일 수도 있습니다.</span>
-      </p>
-    </div>
-  </section>
-
-  <section class="band">
-    <div class="wrap">
-      <h2><span lang="en">Two agents, one paper</span><span lang="ko">한 논문, 두 에이전트</span></h2>
-      <p class="sub">
-        <span lang="en">Claude Code and Codex were pointed at the same 113-page paper at the same time, each with its own question, each through the same CLI. Both wrote one session; neither disturbed the other's, and the eight tags took eight colours from the palette.</span>
-        <span lang="ko">Claude Code와 Codex를 같은 113쪽 논문에 동시에 붙였습니다. 각자 다른 질문을, 같은 CLI를 통해서요. 둘 다 세션을 하나씩 만들었고 서로의 것을 건드리지 않았으며, 태그 여덟 개가 팔레트에서 색을 하나씩 받아갔습니다.</span>
-      </p>
-      <div class="agents">
-        <article class="card">
-          <div class="who"><strong>Claude Code</strong><span>s_rfsybp · 4 highlights</span></div>
-          <p class="q"><span lang="en">What does BountyBench actually measure, and how is the dollar impact computed?</span><span lang="ko">BountyBench는 실제로 무엇을 측정하고, 달러 임팩트는 어떻게 계산하는가?</span></p>
-          <div class="hl">
-            <p class="meta">p.2 · #scope</p>
-            <blockquote><mark>It contains 25 diverse systems with 40 bounties spanning 9 of the OWASP Top 10 Risks.</mark></blockquote>
-            <p class="note"><span lang="en">The measurement surface: real systems with real paid bounties, split into Detect, Exploit and Patch.</span><span lang="ko">측정 범위. 실제로 상금이 지급된 실제 시스템들이고, Detect·Exploit·Patch로 나뉩니다.</span></p>
-          </div>
-          <div class="hl">
-            <p class="meta">p.7 · #dollar-metric</p>
-            <blockquote><mark class="mk-blue">For Detect and Patch, we display the Bounty Total award—the sum of the bounty awards of successfully completed tasks.</mark></blockquote>
-            <p class="note"><span lang="en">The whole dollar mapping. Not a damage model — the literal sum of awards for solved tasks.</span><span lang="ko">달러 환산의 전부입니다. 피해액 모델이 아니라, 해결한 태스크에 걸린 상금의 단순 합입니다.</span></p>
-          </div>
-        </article>
-        <article class="card">
-          <div class="who"><strong>Codex</strong><span>s_5w8enn · 4 highlights</span></div>
-          <p class="q"><span lang="en">How well do the agents actually perform, and what limitations do the authors admit?</span><span lang="ko">에이전트 성능은 실제로 어느 정도이고, 저자들이 인정하는 한계는 무엇인가?</span></p>
-          <div class="hl">
-            <p class="meta">p.1 · #performance</p>
-            <blockquote><mark class="mk-purple">Given up to three attempts, the top-performing agents are Codex CLI: o3-high (12.5% on Detect, mapping to $3,720; 90% on Patch, mapping to $14,152)</mark></blockquote>
-            <p class="note"><span lang="en">The headline spread: finding a vulnerability is still hard, fixing a known one mostly is not.</span><span lang="ko">가장 큰 격차. 취약점을 찾는 건 여전히 어렵고, 이미 아는 것을 고치는 건 대체로 어렵지 않습니다.</span></p>
-          </div>
-          <div class="hl">
-            <p class="meta">p.9 · #maintenance</p>
-            <blockquote><mark class="mk-teal">The root cause of the above limitations is that adding systems and tasks is heavily manual work, taking up to tens of hours each.</mark></blockquote>
-            <p class="note"><span lang="en">Why the benchmark cannot simply grow: every system is hand-built.</span><span lang="ko">벤치마크를 쉽게 키울 수 없는 이유. 시스템 하나하나가 수작업입니다.</span></p>
-          </div>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="band">
-    <div class="wrap">
       <h2><span lang="en">Install</span><span lang="ko">설치</span></h2>
       <p class="sub">
-        <span lang="en">No native build step. pdf.js 6 sets the Node floor; nothing else here needs it.</span>
-        <span lang="ko">네이티브 빌드 단계가 없습니다. Node 버전 하한은 pdf.js 6 때문이고, 그 외에는 필요한 게 없습니다.</span>
+        <span lang="en">Node 22.13 or newer, on macOS, Windows or Linux. No native build step.</span>
+        <span lang="ko">Node 22.13 이상, macOS·Windows·Linux. 네이티브 빌드 단계가 없습니다.</span>
       </p>
       <div class="install">
         <pre><code>npm install -g @taeng0204/pdfpin
 pdfpin open paper.pdf</code></pre>
         <p class="after-code">
-          <span lang="en">The global install also puts the agent skill in place — one file into <code>~/.claude/skills/pdfpin/</code> and <code>~/.codex/skills/pdfpin/</code>, for whichever of the two you have. Both pick it up on their next run with nothing to configure, so the next thing you do is ask: <em>"find the evidence in this paper for X and highlight it."</em> If npm declined to run the install script, the first <code>pdfpin open</code> says so and <code>pdfpin skill install</code> hands it over.</span>
-          <span lang="ko">전역 설치를 하면 에이전트 스킬도 같이 깔립니다. 같은 파일 하나가 <code>~/.claude/skills/pdfpin/</code>과 <code>~/.codex/skills/pdfpin/</code>에 들어가는데, 설치된 쪽에만 씁니다. 둘 다 다음 실행에서 설정 없이 인식하므로, 그다음에 할 일은 그냥 이렇게 시키는 것뿐입니다. <em>"이 논문에서 X의 근거를 찾아서 하이라이팅해줘."</em> npm이 설치 스크립트를 건너뛴 경우에는 첫 <code>pdfpin open</code>이 알려주고, <code>pdfpin skill install</code>로 넘기면 됩니다.</span>
+          <span lang="en">Installing globally also hands the skill to Claude Code and Codex, whichever of the two you have, with nothing to configure. Then you just ask: <em>"find the evidence in this paper for X and highlight it."</em></span>
+          <span lang="ko">전역 설치를 하면 스킬이 Claude Code와 Codex 중 설치된 쪽에 함께 들어갑니다. 설정할 것은 없고, 그다음은 그냥 시키면 됩니다. <em>"이 논문에서 X의 근거를 찾아서 하이라이팅해줘."</em></span>
         </p>
       </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <h2><span lang="en">What an agent does</span><span lang="ko">에이전트가 하는 일</span></h2>
+      <p class="sub">
+        <span lang="en">It never sees a picture of the page. It reads the text layer, quotes from it, and the viewer turns each quote back into glyph boxes on the rendered page.</span>
+        <span lang="ko">페이지 그림을 보지 않습니다. 텍스트 레이어를 읽고 거기서 인용하면, 뷰어가 그 인용문을 렌더링된 페이지 위의 글자 영역으로 되돌립니다.</span>
+      </p>
+      <pre><code>pdfpin text -p 1-2                     <span class="cm"># the page text, to quote from</span>
+pdfpin find <span class="str">"bias momentum"</span>              <span class="cm"># or go straight to a phrase</span>
+
+pdfpin mark --json <span class="str">'{
+  "title": "What is the central finding?",
+  "flow":  "One phenomenon, measured three ways.",
+  "highlights": [
+    {"text": "each agent exhibits an attack-selection bias",
+     "note": "It keeps returning to a few attack families.", "tag": "bias"},
+    {"text": "a bias momentum effect, where agents resist explicit steering",
+     "note": "Push it away and it drags the old distribution along.", "tag": "momentum"}
+  ]}'</span></code></pre>
+      <p class="after-code">
+        <span lang="en">One question makes one session. Matching forgives case, whitespace, end-of-line hyphenation and small typos; a quote it cannot place comes back with the nearest candidates and their page numbers, so the agent can correct itself. Colour is left to the viewer: one per tag, or one per session, whichever the reader picked.</span>
+        <span lang="ko">질문 하나가 세션 하나가 됩니다. 대소문자, 공백, 줄바꿈 하이픈, 작은 오타는 matching이 감안하고, 찾지 못한 인용문은 가장 가까운 후보와 페이지 번호가 함께 돌아와서 에이전트가 스스로 고칩니다. 색은 뷰어에 맡깁니다. 태그마다 한 색, 또는 세션마다 한 색 중 독자가 고른 방식입니다.</span>
+      </p>
     </div>
   </section>
 
@@ -604,9 +527,8 @@ pdfpin open paper.pdf</code></pre>
       <h2><span lang="en">Under it</span><span lang="ko">내부</span></h2>
       <ul class="spec">
         <li><b>anchoring</b><span lang="en">Normalise, exact match, then a bounded fuzzy search; the hit becomes an item/char anchor and the DOM gives the exact glyph boxes.</span><span lang="ko">정규화 후 정확 일치, 실패하면 편집거리를 제한한 근사 탐색. 찾은 위치를 아이템·문자 앵커로 바꾸고, 글자 영역은 DOM에서 정확히 받아옵니다.</span></li>
-        <li><b>rendering</b><span lang="en">pdf.js 6 in the browser and in Node. Canvases, fonts and text layers are built near the viewport and released after.</span><span lang="ko">브라우저와 Node 양쪽에서 pdf.js 6을 씁니다. 캔버스·폰트·텍스트 레이어는 화면 근처에서만 만들고 지나가면 놓아줍니다.</span></li>
         <li><b>storage</b><span lang="en">Plain JSON under <code>~/.pdfpin</code>, one file per document. Nothing is uploaded.</span><span lang="ko">문서 하나당 JSON 파일 하나가 <code>~/.pdfpin</code>에 남습니다. 어디로도 올라가지 않습니다.</span></li>
-          <li><b>transport</b><span lang="en">A daemon bound to 127.0.0.1 with Host and Origin guards, pushing live updates over server-sent events.</span><span lang="ko">127.0.0.1에 바인딩된 데몬이 Host·Origin 검사를 하고, 변경사항은 SSE로 화면에 바로 반영됩니다.</span></li>
+        <li><b>transport</b><span lang="en">A daemon bound to 127.0.0.1 with Host and Origin guards, pushing live updates over server-sent events.</span><span lang="ko">127.0.0.1에 바인딩된 데몬이 Host·Origin 검사를 하고, 변경사항은 SSE로 화면에 바로 반영됩니다.</span></li>
         <li><b>export</b><span lang="en">An annotated PDF with real <code>/Highlight</code> annotations, or a Markdown report grouped by session.</span><span lang="ko">진짜 <code>/Highlight</code> 주석이 들어간 PDF, 또는 세션별로 묶인 마크다운 리포트로 내보냅니다.</span></li>
         <li><b>limits</b><span lang="en">A scanned PDF has no text to quote, and a quote that spans two pages does not resolve — split it.</span><span lang="ko">스캔 PDF에는 인용할 텍스트가 없습니다. 두 페이지에 걸친 인용문도 해결되지 않으니 나눠서 보내야 합니다.</span></li>
       </ul>
