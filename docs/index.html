@@ -451,10 +451,10 @@
   <section class="hero">
     <div class="wrap">
       <p class="eyebrow"><span lang="en">Local PDF viewer + agent CLI</span><span lang="ko">로컬 PDF 뷰어 + 에이전트용 CLI</span></p>
-      <h1><span lang="en">Read a paper with an AI agent sitting next to you.</span><span lang="ko">AI 에이전트와 같이 읽는 논문</span></h1>
+      <h1><span lang="en">Read a paper with an AI agent sitting next to you.</span><span lang="ko">질문은 에이전트에게, 근거는 논문 위에</span></h1>
       <p class="lede">
         <span lang="en">You ask a question. The agent reads the PDF, marks the passages that answer it, and writes a short note on each one. You read the marks in the paper itself, not in a chat window that has lost sight of the page.</span>
-        <span lang="ko">질문을 던지면 에이전트가 PDF를 읽고, 답이 되는 문장에 표시를 남깁니다. 표시마다 왜 중요한지 한 줄이 붙습니다. 채팅창을 오가며 페이지를 다시 찾을 필요 없이, 논문 위에서 바로 읽으면 됩니다.</span>
+        <span lang="ko">질문을 던지면 에이전트가 PDF를 읽고, 답이 되는 문장에 표시를 남깁니다. 표시마다 왜 중요한지 한 줄이 붙습니다. 채팅창과 논문을 오갈 일 없이, 그 자리에서 읽으면 됩니다.</span>
       </p>
       <ul class="facts">
         <li>MIT</li>
@@ -501,7 +501,7 @@ pdfpin open paper.pdf</code></pre>
       <h2><span lang="en">What an agent does</span><span lang="ko">에이전트가 하는 일</span></h2>
       <p class="sub">
         <span lang="en">It never sees a picture of the page. It reads the text layer, quotes from it, and the viewer turns each quote back into glyph boxes on the rendered page.</span>
-        <span lang="ko">에이전트는 페이지 이미지를 보지 않습니다. 텍스트만 읽고 그중 한 구절을 인용하면, 뷰어가 그 구절이 지면 어디에 있는지 찾아 표시합니다.</span>
+        <span lang="ko">에이전트는 페이지 이미지를 보지 않습니다. 텍스트만 읽고 한 구절을 인용하면, 뷰어가 지면 어디에 있는 문장인지 찾아 표시합니다.</span>
       </p>
       <pre><code>pdfpin text -p 1-2                     <span class="cm"># the page text, to quote from</span>
 pdfpin find <span class="str">"bias momentum"</span>              <span class="cm"># or go straight to a phrase</span>
@@ -529,7 +529,7 @@ pdfpin mark --json <span class="str">'{
         <li><b>anchoring</b><span lang="en">Normalise, exact match, then a bounded fuzzy search; the hit becomes an item/char anchor and the DOM gives the exact glyph boxes.</span><span lang="ko">정규화한 뒤 정확히 맞춰보고, 안 되면 편집거리를 제한해 근사 탐색합니다. 찾은 위치는 앵커로 저장하고, 실제 글자 영역은 DOM에서 그때그때 가져옵니다.</span></li>
         <li><b>storage</b><span lang="en">Plain JSON under <code>~/.pdfpin</code>, one file per document. Nothing is uploaded.</span><span lang="ko">문서 하나당 JSON 파일 하나가 <code>~/.pdfpin</code>에 남습니다. 서버로 올라가는 건 없습니다.</span></li>
         <li><b>transport</b><span lang="en">A daemon bound to 127.0.0.1 with Host and Origin guards, pushing live updates over server-sent events.</span><span lang="ko">데몬은 127.0.0.1에만 열리고 Host·Origin을 확인합니다. 바뀐 내용은 SSE로 화면에 바로 반영됩니다.</span></li>
-        <li><b>export</b><span lang="en">An annotated PDF with real <code>/Highlight</code> annotations, or a Markdown report grouped by session.</span><span lang="ko">실제 <code>/Highlight</code> 주석이 들어간 PDF로, 또는 세션별로 묶은 마크다운으로 내보냅니다.</span></li>
+        <li><b>export</b><span lang="en">An annotated PDF with real <code>/Highlight</code> annotations, or a Markdown report grouped by session.</span><span lang="ko">실제 <code>/Highlight</code> 주석이 들어간 PDF, 또는 세션별로 묶은 마크다운으로 내보냅니다.</span></li>
         <li><b>limits</b><span lang="en">A scanned PDF has no text to quote, and a quote that spans two pages does not resolve — split it.</span><span lang="ko">스캔한 PDF에는 인용할 텍스트가 없습니다. 두 페이지에 걸친 구절도 찾지 못하니 나눠서 보내야 합니다.</span></li>
       </ul>
     </div>
