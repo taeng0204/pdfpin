@@ -450,11 +450,11 @@
 <main>
   <section class="hero">
     <div class="wrap">
-      <p class="eyebrow"><span lang="en">Local PDF viewer + agent CLI</span><span lang="ko">로컬 PDF 뷰어 + 에이전트 CLI</span></p>
-      <h1><span lang="en">Read a paper with an AI agent sitting next to you.</span><span lang="ko">AI 에이전트와 나란히 앉아 논문을 읽는다.</span></h1>
+      <p class="eyebrow"><span lang="en">Local PDF viewer + agent CLI</span><span lang="ko">로컬 PDF 뷰어 + 에이전트용 CLI</span></p>
+      <h1><span lang="en">Read a paper with an AI agent sitting next to you.</span><span lang="ko">AI 에이전트와 같이 읽는 논문</span></h1>
       <p class="lede">
         <span lang="en">You ask a question. The agent reads the PDF, marks the passages that answer it, and writes a short note on each one. You read the marks in the paper itself, not in a chat window that has lost sight of the page.</span>
-        <span lang="ko">질문을 하면 에이전트가 PDF를 읽고, 답이 되는 문장들을 하이라이팅한 뒤 각각에 짧은 설명을 붙입니다. 페이지를 잃어버린 채팅창이 아니라 논문 지면 위에서 근거를 읽습니다.</span>
+        <span lang="ko">질문을 던지면 에이전트가 PDF를 읽고, 답이 되는 문장에 표시를 남깁니다. 표시마다 왜 중요한지 한 줄이 붙습니다. 채팅창을 오가며 페이지를 다시 찾을 필요 없이, 논문 위에서 바로 읽으면 됩니다.</span>
       </p>
       <ul class="facts">
         <li>MIT</li>
@@ -483,14 +483,14 @@
       <h2><span lang="en">Install</span><span lang="ko">설치</span></h2>
       <p class="sub">
         <span lang="en">Node 22.13 or newer, on macOS, Windows or Linux. No native build step.</span>
-        <span lang="ko">Node 22.13 이상, macOS·Windows·Linux. 네이티브 빌드 단계가 없습니다.</span>
+        <span lang="ko">Node 22.13 이상이면 macOS, Windows, Linux 어디서든 됩니다. 빌드 과정은 없습니다.</span>
       </p>
       <div class="install">
         <pre><code>npm install -g @taeng0204/pdfpin
 pdfpin open paper.pdf</code></pre>
         <p class="after-code">
           <span lang="en">Installing globally also hands the skill to Claude Code and Codex, whichever of the two you have, with nothing to configure. Then you just ask: <em>"find the evidence in this paper for X and highlight it."</em></span>
-          <span lang="ko">전역 설치를 하면 스킬이 Claude Code와 Codex 중 설치된 쪽에 함께 들어갑니다. 설정할 것은 없고, 그다음은 그냥 시키면 됩니다. <em>"이 논문에서 X의 근거를 찾아서 하이라이팅해줘."</em></span>
+          <span lang="ko">설치하면 Claude Code와 Codex 중 쓰고 계신 쪽에 스킬이 같이 들어갑니다. 따로 설정할 건 없습니다. 이제 이렇게 시키면 됩니다. <em>"이 논문에서 X의 근거를 찾아서 하이라이팅해줘."</em></span>
         </p>
       </div>
     </div>
@@ -501,7 +501,7 @@ pdfpin open paper.pdf</code></pre>
       <h2><span lang="en">What an agent does</span><span lang="ko">에이전트가 하는 일</span></h2>
       <p class="sub">
         <span lang="en">It never sees a picture of the page. It reads the text layer, quotes from it, and the viewer turns each quote back into glyph boxes on the rendered page.</span>
-        <span lang="ko">페이지 그림을 보지 않습니다. 텍스트 레이어를 읽고 거기서 인용하면, 뷰어가 그 인용문을 렌더링된 페이지 위의 글자 영역으로 되돌립니다.</span>
+        <span lang="ko">에이전트는 페이지 이미지를 보지 않습니다. 텍스트만 읽고 그중 한 구절을 인용하면, 뷰어가 그 구절이 지면 어디에 있는지 찾아 표시합니다.</span>
       </p>
       <pre><code>pdfpin text -p 1-2                     <span class="cm"># the page text, to quote from</span>
 pdfpin find <span class="str">"bias momentum"</span>              <span class="cm"># or go straight to a phrase</span>
@@ -517,20 +517,20 @@ pdfpin mark --json <span class="str">'{
   ]}'</span></code></pre>
       <p class="after-code">
         <span lang="en">One question makes one session. Matching forgives case, whitespace, end-of-line hyphenation and small typos; a quote it cannot place comes back with the nearest candidates and their page numbers, so the agent can correct itself. Colour is left to the viewer: one per tag, or one per session, whichever the reader picked.</span>
-        <span lang="ko">질문 하나가 세션 하나가 됩니다. 대소문자, 공백, 줄바꿈 하이픈, 작은 오타는 matching이 감안하고, 찾지 못한 인용문은 가장 가까운 후보와 페이지 번호가 함께 돌아와서 에이전트가 스스로 고칩니다. 색은 뷰어에 맡깁니다. 태그마다 한 색, 또는 세션마다 한 색 중 독자가 고른 방식입니다.</span>
+        <span lang="ko">질문 하나가 세션 하나입니다. 대소문자, 공백, 줄바꿈 하이픈, 사소한 오타는 알아서 맞춥니다. 못 찾은 구절은 비슷한 후보와 페이지 번호를 돌려주니 에이전트가 스스로 고칩니다. 색은 지정하지 않아도 됩니다. 태그별로 한 색씩, 원하면 세션별로 한 색씩 붙습니다.</span>
       </p>
     </div>
   </section>
 
   <section class="band">
     <div class="wrap">
-      <h2><span lang="en">Under it</span><span lang="ko">내부</span></h2>
+      <h2><span lang="en">Under it</span><span lang="ko">동작 방식</span></h2>
       <ul class="spec">
-        <li><b>anchoring</b><span lang="en">Normalise, exact match, then a bounded fuzzy search; the hit becomes an item/char anchor and the DOM gives the exact glyph boxes.</span><span lang="ko">정규화 후 정확 일치, 실패하면 편집거리를 제한한 근사 탐색. 찾은 위치를 아이템·문자 앵커로 바꾸고, 글자 영역은 DOM에서 정확히 받아옵니다.</span></li>
-        <li><b>storage</b><span lang="en">Plain JSON under <code>~/.pdfpin</code>, one file per document. Nothing is uploaded.</span><span lang="ko">문서 하나당 JSON 파일 하나가 <code>~/.pdfpin</code>에 남습니다. 어디로도 올라가지 않습니다.</span></li>
-        <li><b>transport</b><span lang="en">A daemon bound to 127.0.0.1 with Host and Origin guards, pushing live updates over server-sent events.</span><span lang="ko">127.0.0.1에 바인딩된 데몬이 Host·Origin 검사를 하고, 변경사항은 SSE로 화면에 바로 반영됩니다.</span></li>
-        <li><b>export</b><span lang="en">An annotated PDF with real <code>/Highlight</code> annotations, or a Markdown report grouped by session.</span><span lang="ko">진짜 <code>/Highlight</code> 주석이 들어간 PDF, 또는 세션별로 묶인 마크다운 리포트로 내보냅니다.</span></li>
-        <li><b>limits</b><span lang="en">A scanned PDF has no text to quote, and a quote that spans two pages does not resolve — split it.</span><span lang="ko">스캔 PDF에는 인용할 텍스트가 없습니다. 두 페이지에 걸친 인용문도 해결되지 않으니 나눠서 보내야 합니다.</span></li>
+        <li><b>anchoring</b><span lang="en">Normalise, exact match, then a bounded fuzzy search; the hit becomes an item/char anchor and the DOM gives the exact glyph boxes.</span><span lang="ko">정규화한 뒤 정확히 맞춰보고, 안 되면 편집거리를 제한해 근사 탐색합니다. 찾은 위치는 앵커로 저장하고, 실제 글자 영역은 DOM에서 그때그때 가져옵니다.</span></li>
+        <li><b>storage</b><span lang="en">Plain JSON under <code>~/.pdfpin</code>, one file per document. Nothing is uploaded.</span><span lang="ko">문서 하나당 JSON 파일 하나가 <code>~/.pdfpin</code>에 남습니다. 서버로 올라가는 건 없습니다.</span></li>
+        <li><b>transport</b><span lang="en">A daemon bound to 127.0.0.1 with Host and Origin guards, pushing live updates over server-sent events.</span><span lang="ko">데몬은 127.0.0.1에만 열리고 Host·Origin을 확인합니다. 바뀐 내용은 SSE로 화면에 바로 반영됩니다.</span></li>
+        <li><b>export</b><span lang="en">An annotated PDF with real <code>/Highlight</code> annotations, or a Markdown report grouped by session.</span><span lang="ko">실제 <code>/Highlight</code> 주석이 들어간 PDF로, 또는 세션별로 묶은 마크다운으로 내보냅니다.</span></li>
+        <li><b>limits</b><span lang="en">A scanned PDF has no text to quote, and a quote that spans two pages does not resolve — split it.</span><span lang="ko">스캔한 PDF에는 인용할 텍스트가 없습니다. 두 페이지에 걸친 구절도 찾지 못하니 나눠서 보내야 합니다.</span></li>
       </ul>
     </div>
   </section>
@@ -540,7 +540,7 @@ pdfpin mark --json <span class="str">'{
   <div class="wrap">
     <p style="margin:0">
       <span lang="en">Built by Taein Lim. MIT licensed — <a href="https://github.com/taeng0204/pdfpin">github.com/taeng0204/pdfpin</a></span>
-      <span lang="ko">만든 사람 임태인. MIT 라이선스 — <a href="https://github.com/taeng0204/pdfpin">github.com/taeng0204/pdfpin</a></span>
+      <span lang="ko">Built by Taein Lim. MIT licensed — <a href="https://github.com/taeng0204/pdfpin">github.com/taeng0204/pdfpin</a></span>
     </p>
   </div>
 </footer>
