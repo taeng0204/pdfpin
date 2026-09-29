@@ -66,9 +66,17 @@ export async function initViewer({ viewerEl, pagesEl, fileUrl }) {
   }, { passive: true });
 
   let resizeTimer = null;
+  let rasterTimer = null;
   new ResizeObserver(() => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { if (state.zoomMode !== 'custom') setZoom(v, state.zoomMode, { keep: true }); }, 80);
+    resizeTimer = setTimeout(() => {
+      if (state.zoomMode === 'custom') return;
+      // while the window is still moving, stretch the bitmap we already have; a page is several
+      // million pixels and rasterising it on every step of a drag is what makes the drag stutter
+      setZoom(v, state.zoomMode, { keep: true, raster: false });
+      clearTimeout(rasterTimer);
+      rasterTimer = setTimeout(() => { for (const ps of v.pages) if (ps.visible) renderCanvas(v, ps); }, 220);
+    }, 80);
   }).observe(viewerEl);
 
   viewerEl.addEventListener('wheel', (e) => {
@@ -112,7 +120,7 @@ function applyScale(v, scale) {
   emit('scale', scale);
 }
 
-function setZoom(v, mode, { keep = true } = {}) {
+function setZoom(v, mode, { keep = true, raster = true } = {}) {
   const el = v.viewerEl;
   // remember where we are relative to the current page so the same text stays in view
   const cur = v.pages[state.currentPage - 1] || v.pages[0];
@@ -120,7 +128,7 @@ function setZoom(v, mode, { keep = true } = {}) {
   state.zoomMode = typeof mode === 'number' ? 'custom' : mode;
   applyScale(v, computeScale(v, mode));
   if (keep && cur) el.scrollTop = cur.el.offsetTop + before * cur.el.offsetHeight;
-  for (const ps of v.pages) if (ps.visible) renderCanvas(v, ps);
+  if (raster) for (const ps of v.pages) if (ps.visible) renderCanvas(v, ps);
 }
 
 function zoomStep(v, dir) {

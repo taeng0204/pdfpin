@@ -130,7 +130,9 @@ button, input, textarea { font: inherit; color: inherit; }
 
 /* page */
 .page { --scale-factor: 1; --user-unit: 1; --total-scale-factor: calc(var(--scale-factor) * var(--user-unit)); --scale-round-x: 1px; --scale-round-y: 1px;
-  position: relative; background: #fff; box-shadow: var(--shadow-page); border-radius: 2px; flex: none; overflow: hidden; }
+  position: relative; background: #fff; box-shadow: var(--shadow-page); border-radius: 2px; flex: none; overflow: hidden;
+  /* the page carries its own size, so the browser can skip the contents of the ones off screen */
+  content-visibility: auto; }
 .page canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
 .page.unrendered::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 14px, rgba(0,0,0,0.025) 14px 15px); }
 .page .page-num { position: absolute; right: 8px; bottom: 6px; font: 10.5px var(--font-mono); color: rgba(0,0,0,0.25); pointer-events: none; }
