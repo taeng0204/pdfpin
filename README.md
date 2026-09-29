@@ -1,6 +1,6 @@
 <img src="https://raw.githubusercontent.com/taeng0204/pdfpin/main/docs/images/logo.png" alt="pdfpin" width="180">
 
-Read a PDF with an AI agent sitting next to you.
+A PDF viewer your agent can highlight in.
 
 You ask a question. The agent marks the passages that answer it and writes a short note on each
 one. Any PDF with a text layer works, not only papers, and you get there from the agent you are
