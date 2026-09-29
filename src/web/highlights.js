@@ -52,6 +52,11 @@ export function initHighlights(viewer, docApi) {
     }
     g.el.className = `hl hl-color-${a.color}${a.source === 'user' ? ' user' : ''}${state.selectedId === a.id ? ' selected' : ''}`;
     g.el.innerHTML = rects.map((r) => `<div class="hl-rect" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px"></div>`).join('');
+    // a mark that just arrived from an agent glows once and settles, so it is not simply there
+    if (arriving.delete(a.id)) {
+      g.el.classList.add('arrive');
+      setTimeout(() => g.el.classList.remove('arrive'), 1300);
+    }
     if (g.el.parentNode !== ps.hlEl) ps.hlEl.appendChild(g.el);
     current.rects = rects;
     applyFilter();
@@ -163,6 +168,8 @@ export function initHighlights(viewer, docApi) {
     const keep = hasFilter() ? new Set(visibleAnnotations().map((a) => a.id)) : null;
     for (const [gid, g] of groups) g.el.classList.toggle('faded', !!keep && !keep.has(gid));
   }
+  const arriving = new Set(); // ids announced as fresh but not yet drawn
+  on('annotation:arrived', (id) => arriving.add(id));
   on('filter', applyFilter);
   on('sessions', () => { renderAll(); });
   on('annotations', () => setTimeout(applyFilter, 0));

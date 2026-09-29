@@ -155,6 +155,7 @@ button, input, textarea { font: inherit; color: inherit; }
 /* selection is a rule under the words, not more paint over them, so the text stays readable */
 .hl.selected .hl-rect { opacity: min(1, calc(var(--hl-opacity) + 0.08)); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--hl-color) 78%, #000 22%); }
 .hl.pulse .hl-rect { animation: pulse 720ms cubic-bezier(.3,0,.2,1) 1; }
+.hl.arrive .hl-rect { animation: arrive 1100ms cubic-bezier(.22,.7,.25,1) 1; }
 .hl.faded .hl-rect { opacity: 0.14; }
 .hl-color-yellow, .mk-yellow { --hl-color: var(--hl-yellow); }
 .hl-color-green, .mk-green { --hl-color: var(--hl-green); }
@@ -254,7 +255,14 @@ button, input, textarea { font: inherit; color: inherit; }
 .card { position: relative; padding: 10px 10px; margin: 0 -10px 3px; border-radius: 10px; cursor: pointer; transition: background 120ms; }
 .card:hover { background: var(--hover); }
 .card.selected { background: var(--accent-soft); }
-.card.fresh { animation: fresh 1100ms ease-out; }
+/* a mark that arrived from an agent stays folded until it is opened, and says so quietly */
+.card-fold { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 220ms cubic-bezier(.3,0,.2,1), opacity 180ms; }
+.card-fold > div { overflow: hidden; min-height: 0; }
+.card.unread .card-fold { grid-template-rows: 0fr; opacity: 0; }
+.card.unread .card-quote { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.card.unread .card-meta::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--hl-color, var(--accent)); margin-left: 2px; flex: none; }
+.card.unread { background: color-mix(in srgb, var(--hl-color) 9%, transparent); }
+.card.unread:hover { background: color-mix(in srgb, var(--hl-color) 16%, transparent); }
 .card-meta { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; }
 .card-meta .idx { font-variant-numeric: tabular-nums; color: var(--faint); }
 .card-meta .tag { color: var(--muted); }
@@ -417,6 +425,11 @@ mark.mk { color: inherit; background: color-mix(in srgb, var(--hl-color) calc(va
 @keyframes pop-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 @keyframes drawer-in { from { transform: translateX(-16px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--hl-color) 45%, transparent); } 100% { box-shadow: 0 0 0 5px transparent; } }
+@keyframes arrive {
+  0%   { opacity: 0; box-shadow: 0 0 0 0 transparent; }
+  25%  { opacity: min(1, calc(var(--hl-opacity) + 0.24)); box-shadow: 0 0 13px 5px color-mix(in srgb, var(--hl-color) 62%, transparent); }
+  100% { opacity: var(--hl-opacity); box-shadow: 0 0 0 0 transparent; }
+}
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes toast-out { to { opacity: 0; transform: translateY(6px); } }
 @keyframes fresh { 0% { background: var(--accent-soft); } 100% { background: transparent; } }
