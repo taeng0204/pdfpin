@@ -269,8 +269,8 @@ async function boot() {
     'annotations.recolored': async ({ annotations }) => { setAnnotations(annotations); await highlights.renderAll(); },
     'colors.changed': () => resync(),
     'session.added': ({ session }) => {
-      // a new interaction arrives as a reply: the question and its overview, folded over its marks
-      for (const s of state.sessions) state.collapsed.add(s.id);
+      // a new interaction arrives as a reply: the question and its overview, folded over its marks.
+      // Only the new one: an answer showing up must not shut the one you were reading.
       state.collapsed.add(session.id);
       state.unread.add(session.id);
       state.currentSessionId = session.id;
