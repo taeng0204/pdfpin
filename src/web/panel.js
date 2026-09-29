@@ -102,7 +102,8 @@ export function initPanel({ docApi, viewer, highlights }) {
   function foldable({ id, title, metaHtml, actionsHtml, extra = '', dotColors, classes = '' }) {
     const sec = document.createElement('section');
     const folded = state.collapsed.has(id) && !hasFilter();
-    sec.className = `session${folded ? ' collapsed' : ''} ${classes}`.trim();
+    const unread = state.unread.has(id) && folded;
+    sec.className = `session${folded ? ' collapsed' : ''}${unread ? ' unread' : ''} ${classes}`.trim();
     sec.dataset.session = id;
     const byColor = colorBy() === 'session' && id !== LOOSE_ID;
     const dots = [...new Set(dotColors)].map((c) => `<span class="mini-dot hl-color-${c}${byColor ? ' clickable' : ''}"${byColor ? ` title="${t('color.change')}"` : ''}></span>`).join('');
@@ -114,7 +115,8 @@ export function initPanel({ docApi, viewer, highlights }) {
         </div>
         <span class="session-actions">${actionsHtml}<span class="icon-btn fold" aria-hidden="true">${icons.chevron}</span></span>
       </div>
-      <div class="session-fold"><div class="session-clip"><div class="session-body">${extra}<div class="session-groups"></div></div></div></div>`;
+      <div class="session-lead">${extra}</div>
+      <div class="session-fold"><div class="session-clip"><div class="session-body"><div class="session-groups"></div></div></div></div>`;
     sec.querySelector('.session-title').textContent = title;
     return sec;
   }
@@ -171,7 +173,7 @@ export function initPanel({ docApi, viewer, highlights }) {
 
   function card(a, n) {
     const el = document.createElement('article');
-    el.className = `card hl-color-${a.color}${a.id === state.selectedId ? ' selected' : ''}${state.unread.has(a.id) ? ' unread' : ''}`;
+    el.className = `card hl-color-${a.color}${a.id === state.selectedId ? ' selected' : ''}`;
     el.dataset.id = a.id;
     el.tabIndex = 0;
     el.innerHTML = `
@@ -185,10 +187,8 @@ export function initPanel({ docApi, viewer, highlights }) {
         </span>
       </div>
       ${a.quote ? '<p class="card-quote"></p>' : ''}
-      <div class="card-fold"><div>
-        ${a.title ? '<div class="card-title"></div>' : ''}
-        <div class="card-note md"></div>
-      </div></div>`;
+      ${a.title ? '<div class="card-title"></div>' : ''}
+      <div class="card-note md"></div>`;
     if (a.tag) el.querySelector('.tag').textContent = a.tag;
     if (a.quote) { const m = document.createElement('mark'); m.className = `mk mk-${a.color}`; m.textContent = a.quote; el.querySelector('.card-quote').appendChild(m); }
     if (a.title) el.querySelector('.card-title').textContent = a.title;
@@ -346,8 +346,6 @@ export function initPanel({ docApi, viewer, highlights }) {
     if (e.target.closest('.act-edit')) { e.stopPropagation(); if (editingId !== a.id) { editingId = a.id; renderCards(); } return; }
     if (e.target.closest('.act-del')) { e.stopPropagation(); removeWithUndo(a); return; }
     if (e.target.closest('textarea, .card-edit-row')) return;
-    // an unread mark opens as it is selected: the fold is the "you have not read this yet" state
-    if (state.unread.delete(a.id)) el.classList.remove('unread');
     select(a.id, { from: 'panel' });
   });
   cardsEl.addEventListener('keydown', (e) => {
@@ -363,6 +361,7 @@ export function initPanel({ docApi, viewer, highlights }) {
     const id = sec.dataset.session;
     const folding = !sec.classList.contains('collapsed');
     if (folding) state.collapsed.add(id); else state.collapsed.delete(id);
+    if (!folding) { state.unread.delete(id); sec.classList.remove('unread'); } // opening it is reading it
     sec.classList.toggle('collapsed', folding);
     sec.querySelector('.session-head').setAttribute('aria-expanded', String(!folding));
   }

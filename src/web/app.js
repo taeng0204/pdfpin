@@ -269,9 +269,10 @@ async function boot() {
     'annotations.recolored': async ({ annotations }) => { setAnnotations(annotations); await highlights.renderAll(); },
     'colors.changed': () => resync(),
     'session.added': ({ session }) => {
-      // a new interaction: fold the older ones so the latest reads like the top of a history
+      // a new interaction arrives as a reply: the question and its overview, folded over its marks
       for (const s of state.sessions) state.collapsed.add(s.id);
-      state.collapsed.delete(session.id);
+      state.collapsed.add(session.id);
+      state.unread.add(session.id);
       state.currentSessionId = session.id;
       upsertSession(session);
       toast(t('session.new', { title: session.title || t('session.untitled') }), { duration: 4000 });

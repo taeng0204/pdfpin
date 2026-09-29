@@ -13,7 +13,7 @@ export const state = {
   sessions: [],            // oldest first, as stored
   currentSessionId: null,
   collapsed: new Set(),    // session ids folded in the panel
-  unread: new Set(),       // marks that arrived from an agent and have not been opened
+  unread: new Set(),       // sessions that arrived from an agent and have not been opened
   selectedId: null,
   filter: { text: '', tags: new Set(), colors: new Set(), session: null },
   currentPage: 1,
@@ -39,6 +39,7 @@ export function upsertSession(s) {
 export function dropSession(id) {
   state.sessions = state.sessions.filter((s) => s.id !== id);
   state.collapsed.delete(id);
+  state.unread.delete(id);
   if (state.filter.session === id) state.filter.session = null;
   let changed = false;
   for (const [aid, a] of state.annotations) if (a.sessionId === id) { state.annotations.delete(aid); changed = true; emit('annotation:remove', aid); }
@@ -59,13 +60,12 @@ export function setAnnotations(list) {
 export function upsertAnnotation(a, { fresh = false } = {}) {
   state.annotations.set(a.id, { ...a, _fresh: fresh });
   // announced first: the highlight layer has to know before it redraws the mark
-  if (fresh) { state.unread.add(a.id); emit('annotation:arrived', a.id); }
+  if (fresh) emit('annotation:arrived', a.id);
   emit('annotations');
   emit('annotation:upsert', a);
 }
 export function dropAnnotation(id) {
   if (!state.annotations.delete(id)) return;
-  state.unread.delete(id);
   if (state.selectedId === id) state.selectedId = null;
   emit('annotations');
   emit('annotation:remove', id);

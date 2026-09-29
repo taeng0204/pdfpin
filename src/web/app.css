@@ -219,7 +219,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .session-head:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent-soft); }
 .session-main { min-width: 0; }
 .session-title { font: 600 15px/1.35 var(--font-serif); color: var(--ink); letter-spacing: -0.005em; }
-.session.collapsed .session-title { color: var(--ink-2); font-weight: 500; }
+.session.collapsed:not(.unread) .session-title { color: var(--ink-2); font-weight: 500; }
 .session-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 2px; font-size: 12px; color: var(--muted); }
 .session-meta .cur { color: var(--accent); }
 .session-meta .dots { display: inline-flex; gap: 2px; margin-right: 2px; }
@@ -239,6 +239,11 @@ button, input, textarea { font: inherit; color: inherit; }
 .session-clip { overflow: hidden; min-height: 0; }
 .session-body { padding: 4px 0 2px; }
 .session-flow { margin: 4px 0 10px; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
+/* an answer that has not been opened: the question and its overview, over folded evidence */
+.session.unread { background: color-mix(in srgb, var(--accent) 6%, transparent); border-radius: 10px; margin-inline: -10px; padding-inline: 10px; }
+.session.unread .session-head:hover, .session.unread:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.session.unread .session-meta::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+.session.unread .session-lead { padding-bottom: 2px; }
 .session-flow p:last-child { margin-bottom: 0; }
 .session-editor { margin: 6px 0 12px; }
 .session-edit-title { width: 100%; height: 32px; border: 0; border-bottom: 1px solid var(--line-strong); background: transparent; padding: 0; font: 600 15px var(--font-serif); color: var(--ink); margin-bottom: 8px; }
@@ -255,14 +260,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .card { position: relative; padding: 10px 10px; margin: 0 -10px 3px; border-radius: 10px; cursor: pointer; transition: background 120ms; }
 .card:hover { background: var(--hover); }
 .card.selected { background: var(--accent-soft); }
-/* a mark that arrived from an agent stays folded until it is opened, and says so quietly */
-.card-fold { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 220ms cubic-bezier(.3,0,.2,1), opacity 180ms; }
-.card-fold > div { overflow: hidden; min-height: 0; }
-.card.unread .card-fold { grid-template-rows: 0fr; opacity: 0; }
-.card.unread .card-quote { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-.card.unread .card-meta::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--hl-color, var(--accent)); margin-left: 2px; flex: none; }
-.card.unread { background: color-mix(in srgb, var(--hl-color) 9%, transparent); }
-.card.unread:hover { background: color-mix(in srgb, var(--hl-color) 16%, transparent); }
+.card.fresh { animation: fresh 1100ms ease-out; }
 .card-meta { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; }
 .card-meta .idx { font-variant-numeric: tabular-nums; color: var(--faint); }
 .card-meta .tag { color: var(--muted); }
