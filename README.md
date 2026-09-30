@@ -91,6 +91,12 @@ takes it off its highlights.
 
 Export a session as an annotated PDF with real highlight annotations, or as Markdown.
 
+The viewer is an ordinary page served from your own machine, so a browser can install it as an
+app: open `http://127.0.0.1:47831` in a tab and use the browser's install button. That gives you
+pdfpin's icon in the Dock or the Start menu, and a window that comes forward when you click it.
+It is optional. An installed window needs the daemon to be running already, while `pdfpin open`
+starts one and opens a window itself. `PDFPIN_PORT` changes the address it points at.
+
 ## Where things live
 
 `~/.pdfpin` holds one JSON file per document plus your settings; `PDFPIN_HOME` moves it. Other
