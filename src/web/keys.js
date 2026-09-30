@@ -28,7 +28,7 @@ export function initKeys({ viewer, search, ui }) {
     documents: () => ui.toggleDocuments(),
     history: () => ui.toggleHistory(),
     settings: () => ui.openSettings(),
-    search: () => search.open(),
+    search: () => search.toggle(), // the bound key closes what it opened, as the other surfaces do
     zoomIn: () => viewer.zoomStep(1),
     zoomOut: () => viewer.zoomStep(-1),
     zoomReset: () => viewer.setZoom('fit-width'),

@@ -5,6 +5,7 @@ import { icons } from './icons.js';
 import { toast } from './toast.js';
 import { t } from './i18n.js';
 import { state } from './state.js';
+import { isPlainKey } from './shortcuts.js';
 
 const swatches = () => COLORS.map((c) => `<button class="color-dot hl-color-${c}" data-color="${c}" title="${c}"></button>`).join('');
 const escAttr = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -128,7 +129,7 @@ export function initSelection({ viewer, docApi }) {
       markOverflow();
       const ta = bar.querySelector('textarea');
       setTimeout(() => ta.focus(), 0);
-      ta.onkeydown = (ev) => { ev.stopPropagation(); if (ev.key === 'Escape') hide(); if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') create({ color: 'yellow', note: ta.value }); };
+      ta.onkeydown = (ev) => { if (isPlainKey(ev)) ev.stopPropagation(); if (ev.key === 'Escape') hide(); if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') create({ color: 'yellow', note: ta.value }); };
       ta.onmousedown = (ev) => ev.stopPropagation();
       return;
     }

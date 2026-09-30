@@ -6,6 +6,7 @@ import { on } from './state.js';
 import { t } from './i18n.js';
 import { icons } from './icons.js';
 import { computeDomRects } from './highlights.js';
+import { isPlainKey } from './shortcuts.js';
 
 const MAX_HITS = 500;
 
@@ -97,7 +98,7 @@ export function initSearch({ viewer, highlights }) {
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); jump(cur + (e.shiftKey ? -1 : 1)); }
     if (e.key === 'Escape') { e.preventDefault(); close(); }
-    e.stopPropagation();
+    if (isPlainKey(e)) e.stopPropagation();
   });
   btnOpen.onclick = open;
   btnClose.onclick = close;

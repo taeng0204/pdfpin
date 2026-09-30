@@ -41,3 +41,10 @@ export function formatBinding(binding) {
 const MAC_RESERVED = new Set(['mod+h', 'mod+q', 'mod+m', 'mod+w', 'mod+n', 'mod+t', 'mod+shift+h', 'mod+shift+n', 'mod+shift+t']);
 const OTHER_RESERVED = new Set(['mod+n', 'mod+t', 'mod+w', 'mod+shift+n', 'mod+shift+t', 'mod+shift+w', 'mod+shift+q']);
 export const isReserved = (binding) => (IS_MAC ? MAC_RESERVED : OTHER_RESERVED).has(binding);
+
+/**
+ * A plain keystroke, the kind a text field keeps to itself so that typing a name does not step a
+ * page or repaint a highlight. A combination is one of the app's own shortcuts, which keys.js
+ * honours even while you type, so a field has to let those past or they stop working in it.
+ */
+export const isPlainKey = (e) => !e.metaKey && !e.ctrlKey && !e.altKey;

@@ -2,6 +2,7 @@
 import { historyApi } from './api.js';
 import { state } from './state.js';
 import { icons } from './icons.js';
+import { isPlainKey } from './shortcuts.js';
 import { toast } from './toast.js';
 import { confirmDialog } from './dialog.js';
 import { t } from './i18n.js';
@@ -159,7 +160,7 @@ export function initHistory() {
   });
   filter.addEventListener('input', () => { query = filter.value; render(); });
   filter.addEventListener('keydown', (e) => {
-    e.stopPropagation();
+    if (isPlainKey(e)) e.stopPropagation();
     if (e.key === 'Escape') close();
     if (e.key === 'Enter') { const first = list.querySelector('.hist'); if (first) first.click(); }
     if (e.key === 'ArrowDown') { e.preventDefault(); list.querySelector('.hist')?.focus(); }

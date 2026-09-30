@@ -8,6 +8,7 @@ import { confirmDialog, pickColor } from './dialog.js';
 import { openTags, refreshTagOptions } from './tags-ui.js';
 import { openArchive } from './archive-ui.js';
 import { t } from './i18n.js';
+import { isPlainKey } from './shortcuts.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -221,12 +222,12 @@ export function initPanel({ docApi, viewer, highlights }) {
     row.className = 'card-edit-row';
     row.innerHTML = `<button class="btn act-cancel">${t('common.cancel')}</button><button class="btn primary act-save">${t('common.save')}</button>`;
     note.append(tagInput, ta, row);
-    tagInput.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); ta.focus(); } if (e.key === 'Escape') { editingId = null; renderCards(); } };
+    tagInput.onkeydown = (e) => { if (isPlainKey(e)) e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); ta.focus(); } if (e.key === 'Escape') { editingId = null; renderCards(); } };
     ta.focus();
     ta.onkeydown = (e) => {
       if (e.key === 'Escape') { editingId = null; renderCards(); }
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') row.querySelector('.act-save').click();
-      e.stopPropagation();
+      if (isPlainKey(e)) e.stopPropagation();
     };
     row.querySelector('.act-cancel').onclick = (e) => { e.stopPropagation(); editingId = null; renderCards(); };
     row.querySelector('.act-save').onclick = async (e) => {

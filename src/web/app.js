@@ -13,7 +13,7 @@ import { initHistory } from './history.js';
 import { openSettings } from './settings-ui.js';
 import { runTour, startTour, tourWanted } from './tour.js';
 import { t, setLanguage } from './i18n.js';
-import { formatBinding } from './shortcuts.js';
+import { formatBinding, isPlainKey } from './shortcuts.js';
 import { connectEvents } from './sse.js';
 import { toast } from './toast.js';
 import { icons } from './icons.js';
@@ -213,7 +213,7 @@ async function boot() {
   $('page-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { const n = Number(e.target.value); if (n >= 1 && n <= doc.pages) viewer.scrollToPage(n); e.target.blur(); }
     if (e.key === 'Escape') e.target.blur();
-    e.stopPropagation();
+    if (isPlainKey(e)) e.stopPropagation();
   });
   $('page-input').addEventListener('focus', (e) => e.target.select());
   $('page-input').addEventListener('blur', () => { $('page-input').value = state.currentPage; });
