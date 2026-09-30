@@ -154,7 +154,7 @@ export function initPanel({ docApi, viewer, highlights }) {
 
   function sessionEl(s, items, shownItems) {
     const meta = `<span>${t('session.highlights', { n: items.length })}</span><span>·</span><span title="${esc(s.createdAt)}">${relative(s.createdAt)}</span>`
-      + (s.id === state.currentSessionId ? `<span class="cur">${t('session.current')}</span>` : '')
+      + (s.id === state.currentSessionId ? `<span class="cur" title="${t('session.currentHint')}">${t('session.current')}</span>` : '')
       + (s.source === 'user' ? `<span>· ${t('session.byHand')}</span>` : '');
     const actions = `
       <button class="icon-btn act-focus" title="${t('session.focus')}" aria-pressed="${state.filter.session === s.id}">${icons.eye}</button>

@@ -243,7 +243,9 @@ button, input, textarea { font: inherit; color: inherit; }
 .session-flow { margin: 4px 0 10px; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
 /* an answer that has not been opened: the question and its overview, over folded evidence */
 .session.unread { background: color-mix(in srgb, var(--accent) 6%, transparent); border-radius: 10px; margin-inline: -10px; padding-inline: 10px; }
-.session.unread .session-head:hover, .session.unread:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.session.unread:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+/* the block already carries the tint; a second one under the cursor reads as a stray band */
+.session.unread .session-head:hover { background: transparent; }
 .session.unread .session-meta::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
 .session.unread .session-lead { padding-bottom: 2px; }
 .session-flow p:last-child { margin-bottom: 0; }
