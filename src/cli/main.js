@@ -65,23 +65,32 @@ function printNotFound(message, extra) {
 program
   .command('open')
   .description('open a PDF in the viewer (starts the daemon if needed) and make it the current document')
-  .argument('<file>', 'path to a PDF file')
+  .argument('[file]', 'path to a PDF file; with none, raise the viewer on the current document')
   .option('--no-browser', 'do not launch a viewer window')
   .option('--in-browser', 'use the default browser instead of an app-mode window')
   .option('--json', 'machine-readable output')
   .action(async (file, opts) => {
-    const abs = path.resolve(file);
-    if (!fs.existsSync(abs)) throw new CliError(`File not found: ${abs}`);
     const c = await client();
-    const { doc } = await c.call('POST', '/api/docs', { path: abs });
-    const url = `${c.base}${doc.viewerUrl}`;
+    let doc = null;
+    if (file) {
+      const abs = path.resolve(file);
+      if (!fs.existsSync(abs)) throw new CliError(`File not found: ${abs}`);
+      ({ doc } = await c.call('POST', '/api/docs', { path: abs }));
+    } else {
+      // No file means someone launched pdfpin itself rather than a document: pick up where they
+      // left off, and settle for the empty viewer when there is nothing to pick up.
+      try { ({ doc } = await c.call('GET', '/api/docs/current')); } catch { doc = null; }
+    }
+    const url = doc ? `${c.base}${doc.viewerUrl}` : `${c.base}/`;
     let launched = 'not launched';
     // An open window follows the document you just opened, so only launch one when none is live.
     if (opts.browser !== false) {
-      launched = doc.viewers > 0 || doc.viewersAnywhere > 0 ? 'already open' : openViewer(url, { mode: opts.inBrowser ? 'browser' : undefined, home });
+      const live = doc && (doc.viewers > 0 || doc.viewersAnywhere > 0);
+      launched = live ? 'already open' : openViewer(url, { mode: opts.inBrowser ? 'browser' : undefined, home });
     }
-    if (opts.json) return json({ ...doc, url, launched });
-    out(`Opened "${doc.title}" (${doc.pages} pages, ${doc.annotations.length} annotations) · id ${doc.id}`);
+    if (opts.json) return json({ ...(doc ?? {}), url, launched });
+    if (doc) out(`Opened "${doc.title}" (${doc.pages} pages, ${doc.annotations.length} annotations) · id ${doc.id}`);
+    else out('No document open yet — the viewer will ask for one.');
     out(`Viewer: ${url}  [${launched}]`);
     const notice = skills.pendingNotice(home);
     if (notice) out(`\n${notice}`);
