@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { defaultHome, serverInfoPath, DEFAULT_PORT } from '../server/index.js';
+import { defaultHome, serverInfoPath, DEFAULT_PORT, VERSION } from '../server/index.js';
 
 const SERVER_ENTRY = fileURLToPath(new URL('../server/index.js', import.meta.url));
 
@@ -49,9 +49,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export async function ensureDaemon({ home = defaultHome(), port = Number(process.env.PDFPIN_PORT ?? DEFAULT_PORT), start = true } = {}) {
   const info = readServerInfo(home);
   if (!info) { if (!start) return null; }
-  // A daemon busy with a long job can be slow to answer. Ask again, patiently, before writing it
-  // off: starting a second daemon on the same home would put two writers on one store.
-  else if ((await healthy(info.port, 900, home)) || (await healthy(info.port, 5000, home))) return info;
+  else {
+    // A daemon busy with a long job can be slow to answer. Ask again, patiently, before writing it
+    // off: starting a second daemon on the same home would put two writers on one store.
+    const h = (await healthy(info.port, 900, home)) || (await healthy(info.port, 5000, home));
+    // A daemon left over from an older install answers happily and then behaves like its own
+    // version, which reads as the file being unreadable rather than as the daemon being old.
+    if (h && (h.version === VERSION || !start)) return info;
+    if (h) {
+      const gone = await stopDaemon(home);
+      if (!gone) throw new CliError(`A pdfpin daemon from v${h.version} is still running and would not stop. Kill pid ${info.pid}, then try again.`);
+    }
+  }
   if (!start) return null;
   fs.mkdirSync(home, { recursive: true });
   try { fs.unlinkSync(serverInfoPath(home)); } catch { /* no stale file */ }

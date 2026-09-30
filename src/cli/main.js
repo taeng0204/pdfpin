@@ -14,6 +14,8 @@ const program = new Command();
 const home = defaultHome();
 const out = (s = '') => process.stdout.write(`${s}\n`);
 const err = (s = '') => process.stderr.write(`${s}\n`);
+// `pdfpin list | head` closes the pipe under us; that is the reader being done, not a failure.
+for (const stream of [process.stdout, process.stderr]) stream.on('error', (e) => { if (e.code === 'EPIPE') process.exit(0); });
 const trunc = (s, n) => (s && s.length > n ? `${s.slice(0, n - 1)}…` : s || '');
 const json = (v) => out(JSON.stringify(v, null, 2));
 /** Shells often deliver a literal backslash-n; agents mean a line break. */
