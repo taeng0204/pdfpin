@@ -4,7 +4,9 @@ import { spawn } from 'node:child_process';
 
 export function revealCommand(platform, filePath) {
   if (platform === 'darwin') return { cmd: 'open', args: ['-R', filePath] };
-  if (platform === 'win32') return { cmd: 'explorer.exe', args: [`/select,${filePath}`] };
+  // Explorer takes one verbatim command line, so the path carries its own quotes: without them
+  // `/select,C:\Users\Ada Lovelace\a.pdf` is read as far as the first space and nothing is selected.
+  if (platform === 'win32') return { cmd: 'explorer.exe', args: [`/select,"${filePath}"`] };
   return { cmd: 'xdg-open', args: [path.dirname(filePath)] };
 }
 
