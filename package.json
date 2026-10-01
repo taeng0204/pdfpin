@@ -12,7 +12,10 @@
     "cli",
     "pdfjs",
     "research",
-    "paper"
+    "paper",
+    "claude-code",
+    "codex",
+    "pdf-annotation"
   ],
   "author": "Taein Lim (https://github.com/taeng0204)",
   "license": "MIT",
