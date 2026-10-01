@@ -1,0 +1,33 @@
+# Publishing from a tag, so a release needs no token and no interactive login. npm verifies a
+# short-lived OIDC token minted for this one workflow run against the trusted publisher configured
+# on the package, which is why `permissions: id-token: write` is the whole credential story here.
+name: publish
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+      # trusted publishing needs npm 11.5.1 or newer; do not rely on what the runner happens to ship
+      - run: npm install -g npm@latest
+      - run: npm ci
+      - name: the tag and the package must agree
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p 'require("./package.json").version')"
+          test "$tag" = "$pkg" || { echo "tag $GITHUB_REF_NAME does not match package.json $pkg"; exit 1; }
+      - run: npm test
+        env:
+          PDFPIN_NO_LAUNCH: '1'
+      - run: npm publish
