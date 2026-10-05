@@ -119,7 +119,9 @@ rebuild as `PDFPIN_NO_SKILL=1` does for the skill.
 
 ## Where things live
 
-`~/.pdfpin` holds one JSON file per document plus your settings; `PDFPIN_HOME` moves it. Other
+`~/.pdfpin` holds one JSON file per document plus your settings; `PDFPIN_HOME` moves it. Forgetting
+a document, clearing its highlights or removing a session keeps a copy of the record as it was in
+`~/.pdfpin/trash`, where the last 40 stay — putting one back is a `mv` into `~/.pdfpin/docs`. Other
 environment variables: `PDFPIN_PORT` (default 47831), `PDFPIN_BROWSER=browser` to use your default
 browser instead of an app-mode window, `PDFPIN_CHROME` to point at a specific Chromium.
 

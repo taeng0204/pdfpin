@@ -49,6 +49,7 @@ export class Store {
   constructor(home) {
     this.home = home;
     this.docsDir = path.join(home, 'docs');
+    this.trashDir = path.join(home, 'trash');
     fs.mkdirSync(this.docsDir, { recursive: true });
     this.stateFile = path.join(home, 'state.json');
     this.state = readJson(this.stateFile, { currentDocId: null });
@@ -98,6 +99,38 @@ export class Store {
 
   _file(id) {
     return path.join(this.docsDir, `${id}.json`);
+  }
+
+  /**
+   * Keep what is about to be destroyed. Forgetting a document, clearing its marks or removing a
+   * session is one click behind a confirmation, and what goes with it is the reason the document
+   * was ever opened — months of reading, in a file the viewer will never show again. The copies
+   * are the same plain JSON the store writes, so putting one back is a `mv` into docs/.
+   * Keeping a copy must never stop what someone asked for, so every failure here is swallowed.
+   */
+  _toTrash(doc, why) {
+    if (!doc) return null;
+    try {
+      fs.mkdirSync(this.trashDir, { recursive: true });
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const file = path.join(this.trashDir, `${doc.id}-${why}-${stamp}.json`);
+      writeJsonAtomic(file, doc);
+      this._pruneTrash();
+      return file;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Enough to undo a mistake, not a second copy of everything ever read. Newest kept. */
+  _pruneTrash(keep = 40) {
+    try {
+      const rows = fs.readdirSync(this.trashDir)
+        .filter((f) => f.endsWith('.json'))
+        .map((f) => ({ f, at: fs.statSync(path.join(this.trashDir, f)).mtimeMs }))
+        .sort((a, b) => b.at - a.at);
+      for (const { f } of rows.slice(keep)) fs.rmSync(path.join(this.trashDir, f), { force: true });
+    } catch { /* nothing there to prune */ }
   }
 
   _save(doc) {
@@ -189,8 +222,11 @@ export class Store {
   }
 
   removeDocument(id) {
-    if (!this.get(id)) return false;
+    const doc = this.get(id);
+    if (!doc) return false;
+    this._toTrash(doc, 'forgotten');
     this.cache.delete(id);
+    this.stamps.delete(id);
     try { fs.unlinkSync(this._file(id)); } catch { return false; }
     if (this.state.currentDocId === id) this.setCurrent(null);
     return true;
@@ -284,6 +320,7 @@ export class Store {
     if (!doc) return 0;
     const keep = tag ? doc.annotations.filter((a) => a.tag !== tag) : [];
     const removed = doc.annotations.length - keep.length;
+    if (removed) this._toTrash(structuredClone(doc), 'cleared');
     doc.annotations = keep;
     this._save(doc);
     return removed;
@@ -333,6 +370,8 @@ export class Store {
   removeSession(docId, sessionId) {
     const doc = this.get(docId);
     if (!doc || !doc.sessions.some((s) => s.id === sessionId)) return -1;
+    // Even a session with no marks carries the agent's overview of what it found.
+    this._toTrash(structuredClone(doc), 'session-removed');
     doc.sessions = doc.sessions.filter((s) => s.id !== sessionId);
     const before = doc.annotations.length;
     doc.annotations = doc.annotations.filter((a) => a.sessionId !== sessionId);
