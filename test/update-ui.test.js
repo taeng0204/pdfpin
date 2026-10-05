@@ -25,16 +25,36 @@ test('nothing is said when this is already the newest pdfpin', async () => {
   assert.equal(notice().hidden, true);
 });
 
-test('a newer version is named, with the command that gets it', async () => {
-  globalThis.fetch = reply({ current: '0.3.1', latest: '0.4.0', newer: true, checked: true });
+test('a newer version is named, and a registry install gets a button', async () => {
+  globalThis.fetch = reply({ current: '0.3.1', latest: '0.4.0', newer: true, checked: true, kind: 'registry' });
   await initUpdateNotice();
   assert.equal(notice().hidden, false);
-  assert.match(notice().querySelector('.update-text').textContent, /0\.4\.0/);
-  assert.equal(notice().querySelector('.update-cmd').textContent, 'npm install -g @taeng0204/pdfpin');
+  assert.match(notice().querySelector('.update-title').textContent, /0\.4\.0/);
+  assert.match(notice().querySelector('.update-sub').textContent, /0\.3\.1/, 'and what you are on');
+  assert.equal(notice().querySelector('.update-go').hidden, false);
+});
+
+test('a checkout wearing the global name is told to use git, not a button', async () => {
+  globalThis.fetch = reply({ current: '0.3.1', latest: '0.4.0', newer: true, checked: true, kind: 'linked' });
+  await initUpdateNotice();
+  assert.equal(notice().hidden, false);
+  assert.equal(notice().querySelector('.update-go').hidden, true, 'npm must not overwrite a checkout');
+  assert.match(notice().querySelector('.update-sub').textContent, /git/i);
+});
+
+test('a failed update says why and hands over the command', async () => {
+  globalThis.fetch = async (url, opts) => (opts?.method === 'POST'
+    ? { ok: true, text: async () => JSON.stringify({ ok: false, kind: 'failed', error: 'EACCES: permission denied' }) }
+    : { ok: true, text: async () => JSON.stringify({ current: '0.3.1', latest: '0.4.0', newer: true, kind: 'registry' }) });
+  await initUpdateNotice();
+  await notice().querySelector('.update-go').onclick();
+  assert.match(notice().querySelector('.update-sub').textContent, /EACCES/);
+  assert.equal(notice().querySelector('.update-cmd').hidden, false);
+  assert.equal(notice().querySelector('.update-go').hidden, true);
 });
 
 test('closing it keeps it closed for that version, but not for the one after', async () => {
-  globalThis.fetch = reply({ current: '0.3.1', latest: '0.4.0', newer: true, checked: true });
+  globalThis.fetch = reply({ current: '0.3.1', latest: '0.4.0', newer: true, checked: true, kind: 'registry' });
   await initUpdateNotice();
   notice().querySelector('.update-close').click();
   assert.equal(notice().hidden, true);
@@ -42,7 +62,8 @@ test('closing it keeps it closed for that version, but not for the one after', a
   await initUpdateNotice();
   assert.equal(notice().hidden, true, 'the same version stays dismissed');
 
-  globalThis.fetch = reply({ current: '0.3.1', latest: '0.5.0', newer: true, checked: true });
+
+  globalThis.fetch = reply({ current: '0.3.1', latest: '0.5.0', newer: true, checked: true, kind: 'registry' });
   await initUpdateNotice();
   assert.equal(notice().hidden, false, 'a later one speaks up again');
 });

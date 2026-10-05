@@ -585,37 +585,73 @@ mark.mk { padding: 0.08em 0.22em; }
 .page-error p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
 .page-error .why { font: 11.5px var(--font-mono); color: var(--muted); max-width: 80%; overflow-wrap: anywhere; }
 
-/* One line between the bar and the paper. It is news, not an alarm: it borrows the accent for the
-   version and otherwise reads like the rest of the chrome, and it goes away for good when closed. */
+/* A small card in the corner when a newer pdfpin exists. It is news, not an alarm: it waits at the
+   edge of the paper, says the one thing it knows, and goes for good when closed. The card is sized
+   to its own text — stretched to a fixed width, two short lines leave a hole beside the button. */
 .update-notice {
+  position: fixed;
+  right: 18px;
+  bottom: 20px;
+  z-index: 60;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 14px;
-  font-size: 12.5px;
-  color: var(--fg-dim);
-  background: color-mix(in srgb, var(--accent) 7%, var(--bg));
-  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  width: max-content;
+  max-width: min(340px, calc(100vw - 36px));
+  padding: 12px 12px 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel, var(--bg));
+  box-shadow: 0 10px 34px rgb(0 0 0 / 16%), 0 2px 6px rgb(0 0 0 / 8%);
+  animation: update-in 220ms cubic-bezier(.2, .8, .3, 1);
 }
-.update-notice .update-text { color: var(--fg); }
+@keyframes update-in { from { opacity: 0; transform: translateY(10px); } }
+@media (prefers-reduced-motion: reduce) { .update-notice { animation: none; } }
+
+/* centred against two lines the mark drifts down to the second one; it belongs to the title */
+.update-notice .update-mark { flex: none; align-self: flex-start; margin-top: 1px; font-size: 16px; line-height: 1.1; }
+.update-notice .update-body { min-width: 0; }
+.update-notice .update-title { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.3; color: var(--fg); }
+.update-notice .update-sub { margin: 2px 0 0; font-size: 11.5px; line-height: 1.4; color: var(--fg-dim); overflow-wrap: anywhere; }
 .update-notice .update-cmd {
+  display: block;
+  margin-top: 7px;
+  padding: 5px 7px;
+  border-radius: 6px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11.5px;
-  padding: 2px 7px;
-  border-radius: 5px;
+  font-size: 10.5px;
+  color: var(--fg);
   background: color-mix(in srgb, var(--fg) 7%, transparent);
-  user-select: all; /* one click selects the whole command, which is the only thing to do with it */
+  user-select: all; /* one click takes the whole command, which is the only thing to do with it */
 }
+.update-notice .update-go { flex: none; padding: 5px 12px; font-size: 12px; border-radius: 8px; }
+.update-notice .update-go[disabled] { opacity: .6; cursor: default; }
 .update-notice .update-close {
-  margin-inline-start: auto;
+  flex: none;
   border: 0;
   background: none;
   cursor: pointer;
   color: var(--fg-dim);
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
-  padding: 2px 6px;
-  border-radius: 5px;
+  padding: 3px 5px;
+  border-radius: 6px;
 }
 .update-notice .update-close:hover { background: color-mix(in srgb, var(--fg) 9%, transparent); color: var(--fg); }
-@media (max-width: 560px) { .update-notice .update-cmd { display: none; } }
+/* while npm runs the card should look busy rather than broken */
+.update-notice.working .update-sub::after {
+  content: '';
+  display: inline-block;
+  width: 9px; height: 9px;
+  margin-inline-start: 6px;
+  vertical-align: -1px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: update-spin .7s linear infinite;
+}
+@keyframes update-spin { to { transform: rotate(360deg); } }
+/* the failed and linked states carry a sentence, not two words, so let them use the full width */
+.update-notice.failed, .update-notice.linked { width: min(340px, calc(100vw - 36px)); align-items: flex-start; }
+.update-notice.failed .update-close, .update-notice.linked .update-close { margin-top: -2px; }
+.update-notice.failed { border-color: color-mix(in srgb, var(--danger, crimson) 45%, var(--border)); }

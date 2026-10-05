@@ -13,9 +13,11 @@ plain JSON beside the path of the PDF they belong to.
 
 pdfpin makes one request to the internet, at most once a day, and only to ask npm whether a newer
 version exists — npm tells nobody who already installed, so otherwise you would stay on the version
-you first downloaded. It carries the package name and nothing else, the answer is one quiet line in
-the viewer, and the CLI never mentions it. Turn it off under Updates in settings, or with
-`PDFPIN_NO_UPDATE_CHECK=1`.
+you first downloaded. It carries the package name and nothing else, the answer is a small card in
+the corner of the viewer, and the CLI never mentions it. The card's button runs that same
+`npm install -g` for you and brings the window back on the new version; a pdfpin linked to a
+checkout says so instead, since npm must not overwrite a tree you are working in. Turn the whole
+thing off under Updates in settings, or with `PDFPIN_NO_UPDATE_CHECK=1`.
 
 ## Install
 

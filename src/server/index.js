@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { Store } from './store.js';
 import { SseHub } from './sse.js';
-import { updateState } from './update.js';
+import { updateState, installKind, runUpdate } from './update.js';
 import { DocManager, ApiError } from './docs.js';
 import { SettingsStore, SettingsError } from './settings.js';
 import { lockHome } from './lock.js';
@@ -112,7 +112,17 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   route('GET', '/api/settings', () => ({ settings: settings.get() }));
   // Asked for by the viewer, never by the CLI: an agent reading our output should not have to
   // step over a line about versions, and --json must stay exactly what it says it is.
-  route('GET', '/api/update', () => updateState({ home, name: PKG_NAME, current: VERSION, enabled: settings.get().updateCheck }));
+  route('GET', '/api/update', async () => ({
+    ...(await updateState({ home, name: PKG_NAME, current: VERSION, enabled: settings.get().updateCheck })),
+    kind: installKind(PKG_NAME),
+  }));
+  // The update button. A state-changing POST, so the origin rules above already keep it to the
+  // viewer's own window; nothing else on the machine can press it.
+  route('POST', '/api/update', async () => {
+    const state = await updateState({ home, name: PKG_NAME, current: VERSION, enabled: settings.get().updateCheck });
+    if (!state.newer) return { ok: false, kind: 'current', error: 'This is already the newest pdfpin.' };
+    return runUpdate({ name: PKG_NAME, latest: state.latest });
+  });
   const touchesColors = (body) => ['colorBy', 'palette'].some((k) => body && k in body);
   route('PATCH', '/api/settings', ({ body }) => saveSettings(() => settings.update(body || {}), touchesColors(body)));
   route('DELETE', '/api/settings', () => saveSettings(() => settings.reset(), true));
