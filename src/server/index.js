@@ -101,7 +101,11 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   const routes = [];
   const route = (method, pattern, handler) => routes.push({ method, re: new RegExp(`^${pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)')}/?$`), handler });
 
-  route('GET', '/api/health', () => ({ ok: true, version: VERSION, pid: process.pid, home }));
+  // Node runs on from code it already loaded, so a daemon whose install was deleted or moved keeps
+  // answering every API call and then 404s the viewer itself, which reads as pdfpin being broken.
+  // Say whether the page is still on disk and the CLI can replace the daemon instead.
+  const viewerReadable = () => { try { return fs.statSync(path.join(WEB_ROOT, 'index.html')).isFile(); } catch { return false; } };
+  route('GET', '/api/health', () => ({ ok: true, version: VERSION, pid: process.pid, home, web: viewerReadable() }));
   route('GET', '/api/settings', () => ({ settings: settings.get() }));
   const touchesColors = (body) => ['colorBy', 'palette'].some((k) => body && k in body);
   route('PATCH', '/api/settings', ({ body }) => saveSettings(() => settings.update(body || {}), touchesColors(body)));

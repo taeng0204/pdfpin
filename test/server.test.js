@@ -35,10 +35,12 @@ after(async () => {
   await handle.close();
 });
 
-test('health endpoint answers', async () => {
+test('health endpoint answers, and says the viewer is still on disk', async () => {
   const r = await api('GET', '/api/health');
   assert.equal(r.status, 200);
   assert.equal(r.json.ok, true);
+  // A daemon whose install was deleted under it keeps answering this; the CLI replaces it on `web`.
+  assert.equal(r.json.web, true);
 });
 
 test('opening a document registers it as current', async () => {

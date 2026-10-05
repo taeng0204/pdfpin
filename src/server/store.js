@@ -11,7 +11,12 @@ export const isDocId = (id) => typeof id === 'string' && /^[0-9a-f]{10}$/.test(i
 
 export function docIdFor(filePath) {
   const norm = path.resolve(filePath).replace(/\\/g, '/');
-  const key = process.platform === 'win32' ? norm.toLowerCase() : norm;
+  // macOS and Windows hand back one file for either Unicode spelling of its name, so "노트.pdf"
+  // typed at a shell (NFC) and the same file arriving from Finder (NFD) have to reach one document;
+  // without this they hash apart and the paper is opened twice, each half holding its own notes.
+  // Linux keeps the two spellings as two real files, so there the bytes are the identity.
+  const canon = process.platform === 'linux' ? norm : norm.normalize('NFC');
+  const key = process.platform === 'win32' ? canon.toLowerCase() : canon;
   return crypto.createHash('sha1').update(key).digest('hex').slice(0, 10);
 }
 
@@ -49,6 +54,46 @@ export class Store {
     this.state = readJson(this.stateFile, { currentDocId: null });
     this.cache = new Map();
     this.stamps = new Map(); // docId -> mtimeMs of the copy we hold
+    this._rekeyLegacyIds();
+  }
+
+  /**
+   * Records filed before paths were normalised. One Unicode spelling of a name hashed to one id
+   * and the other spelling to another, so the same paper could end up filed twice with its notes
+   * split between the halves. Move each record to the id its path gives now. When both spellings
+   * are already on disk, keep the fuller one and set the other aside: merging two histories would
+   * be guesswork, and deleting one would take notes with it.
+   */
+  _rekeyLegacyIds() {
+    let files;
+    try { files = fs.readdirSync(this.docsDir); } catch { return; }
+    for (const f of files) {
+      if (!f.endsWith('.json')) continue;
+      const was = f.slice(0, -5);
+      if (!isDocId(was)) continue;
+      const source = path.join(this.docsDir, f);
+      const doc = readJson(source, null);
+      if (!doc?.path) continue;
+      const now = docIdFor(doc.path);
+      if (now === was) continue;
+      const target = this._file(now);
+      try {
+        if (!fs.existsSync(target)) {
+          writeJsonAtomic(target, { ...doc, id: now });
+          fs.rmSync(source, { force: true });
+        } else {
+          const rival = readJson(target, null);
+          const loser = (doc.annotations?.length ?? 0) > (rival?.annotations?.length ?? 0) ? target : source;
+          const kept = `${loser}.duplicate-${Date.now()}`;
+          fs.renameSync(loser, kept);
+          if (loser === target) { writeJsonAtomic(target, { ...doc, id: now }); fs.rmSync(source, { force: true }); }
+          console.error(`[pdfpin] ${doc.path} was filed twice; kept the fuller record and set the other aside as ${kept}`);
+        }
+        if (this.state.currentDocId === was) { this.state.currentDocId = now; this._saveState(); }
+      } catch (e) {
+        console.error(`[pdfpin] could not re-file ${source}: ${e.message}`);
+      }
+    }
   }
 
   _file(id) {

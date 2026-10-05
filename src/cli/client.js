@@ -45,6 +45,15 @@ export async function healthy(port, timeoutMs = 900, home = null) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Whether a daemon that answered is still the right one to talk to. It can be left over from an
+ * older install, which answers happily and then behaves like its own version; or its files can
+ * have been deleted or moved out from under it, which it survives because Node already holds the
+ * code, while every page it serves comes back 404. Both read as the file being unreadable rather
+ * than as the daemon being stale. A daemon too old to report `web` is already caught by version.
+ */
+export const isStale = (h) => !!h && (h.version !== VERSION || h.web === false);
+
 /** Returns server info, starting the daemon when it is not running. */
 export async function ensureDaemon({ home = defaultHome(), port = Number(process.env.PDFPIN_PORT ?? DEFAULT_PORT), start = true } = {}) {
   const info = readServerInfo(home);
@@ -53,12 +62,11 @@ export async function ensureDaemon({ home = defaultHome(), port = Number(process
     // A daemon busy with a long job can be slow to answer. Ask again, patiently, before writing it
     // off: starting a second daemon on the same home would put two writers on one store.
     const h = (await healthy(info.port, 900, home)) || (await healthy(info.port, 5000, home));
-    // A daemon left over from an older install answers happily and then behaves like its own
-    // version, which reads as the file being unreadable rather than as the daemon being old.
-    if (h && (h.version === VERSION || !start)) return info;
+    if (h && (!isStale(h) || !start)) return info;
     if (h) {
+      const why = h.version !== VERSION ? `from v${h.version}` : 'whose own files are gone';
       const gone = await stopDaemon(home);
-      if (!gone) throw new CliError(`A pdfpin daemon from v${h.version} is still running and would not stop. Kill pid ${info.pid}, then try again.`);
+      if (!gone) throw new CliError(`A pdfpin daemon ${why} is still running and would not stop. Kill pid ${info.pid}, then try again.`);
     }
   }
   if (!start) return null;
