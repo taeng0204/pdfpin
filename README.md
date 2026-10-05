@@ -97,6 +97,13 @@ pdfpin's icon in the Dock or the Start menu, and a window that comes forward whe
 It is optional. An installed window needs the daemon to be running already, while `pdfpin open`
 starts one and opens a window itself. `PDFPIN_PORT` changes the address it points at.
 
+On macOS there is also a real launcher. `pdfpin app install` builds `pdfpin.app` into
+`~/Applications`, using only tools macOS already has. Unlike the browser's install it starts the
+daemon itself, so clicking it from the Dock works from cold, and it registers for PDFs: double-click
+one, or right-click → Open With → pdfpin, and that file opens in the viewer. It does not make itself
+the default PDF application. `pdfpin app` says whether it is installed and `pdfpin app remove` takes
+it out again; a bundle pdfpin did not write is reported, never replaced without `--force`.
+
 ## Where things live
 
 `~/.pdfpin` holds one JSON file per document plus your settings; `PDFPIN_HOME` moves it. Other

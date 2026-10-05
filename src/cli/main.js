@@ -9,6 +9,7 @@ import { Client, CliError, ensureDaemon, stopDaemon, readServerInfo, healthy } f
 import { openViewer } from './launch.js';
 import { GUIDE } from './guide.js';
 import * as skills from './skill.js';
+import * as bundle from './app.js';
 
 const program = new Command();
 const home = defaultHome();
@@ -508,6 +509,45 @@ agentOptions(skill.command('remove').description('take the skill out again'))
     }
   });
 
+const app = program.command('app').description('install the macOS launcher: a Dock icon, and pdfpin under "Open With"');
+
+const ONLY_MAC = 'The launcher is macOS only. Elsewhere, start the viewer with `pdfpin open` and install it from the browser.';
+const APP_SAID = {
+  absent: 'not installed',
+  current: 'installed',
+  outdated: 'installed, older than this pdfpin — run `pdfpin app install`',
+  modified: 'a bundle pdfpin did not write — `pdfpin app install --force` replaces it',
+};
+
+app.command('list', { isDefault: true })
+  .description('show whether the launcher is installed')
+  .action(() => {
+    const r = bundle.status();
+    if (!r.supported) return out(ONLY_MAC);
+    const was = r.installed && r.state === 'outdated' ? ` (v${r.installed})` : '';
+    out(`${APP_SAID[r.state]}${was} · ${r.app}`);
+  });
+
+app.command('install')
+  .description('build the launcher into ~/Applications')
+  .option('-f, --force', 'replace a bundle pdfpin did not write')
+  .action((opts) => {
+    const r = bundle.install({ force: opts.force });
+    if (r === 'unsupported') return out(ONLY_MAC);
+    if (r === 'modified') return err(`✘ ${bundle.destPath()} holds a bundle pdfpin did not write. Re-run with --force to replace it.`);
+    out(`${r === 'current' ? 'already up to date' : r} · ${bundle.destPath()}`);
+    if (r !== 'current') out('\nKeep it in the Dock to raise the viewer, or right-click a PDF → Open With → pdfpin.');
+  });
+
+app.command('remove')
+  .description('take the launcher out again')
+  .option('-f, --force', 'remove a bundle pdfpin did not write')
+  .action((opts) => {
+    const r = bundle.remove({ force: opts.force });
+    if (r === 'modified') return err(`✘ ${bundle.destPath()} holds a bundle pdfpin did not write. Re-run with --force to remove it.`);
+    out(`${r === 'absent' ? 'was not installed' : 'removed'} · ${bundle.destPath()}`);
+  });
+
 program
   .command('status')
   .description('show daemon status')
@@ -523,6 +563,8 @@ program
     const word = { absent: 'not installed', current: 'installed', outdated: 'needs `pdfpin skill install`', modified: 'a copy pdfpin did not write' };
     const rows = skills.status().filter((r) => r.present || r.state !== 'absent');
     if (rows.length) out(`skill: ${rows.map((r) => `${r.label} ${word[r.state]}`).join(' · ')}`);
+    const b = bundle.status();
+    if (b.supported && b.state !== 'absent') out(`app: ${{ current: 'installed', outdated: 'needs `pdfpin app install`', modified: 'a bundle pdfpin did not write' }[b.state]}`);
   });
 
 program
