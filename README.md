@@ -8,8 +8,14 @@ already using.
 
 ![The viewer: a paper on the left, the agent's answer on the right](https://raw.githubusercontent.com/taeng0204/pdfpin/main/docs/images/viewer-light.png)
 
-Nothing leaves your machine. The daemon listens on loopback only and your notes sit in plain JSON
-beside the path of the PDF they belong to.
+Your documents never leave your machine. The daemon listens on loopback only and your notes sit in
+plain JSON beside the path of the PDF they belong to.
+
+pdfpin makes one request to the internet, at most once a day, and only to ask npm whether a newer
+version exists — npm tells nobody who already installed, so otherwise you would stay on the version
+you first downloaded. It carries the package name and nothing else, the answer is one quiet line in
+the viewer, and the CLI never mentions it. Turn it off under Updates in settings, or with
+`PDFPIN_NO_UPDATE_CHECK=1`.
 
 ## Install
 

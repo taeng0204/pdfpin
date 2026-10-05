@@ -7,6 +7,7 @@ import { initHighlights } from './highlights.js';
 import { initPanel } from './panel.js';
 import { initSearch } from './search.js';
 import { initSelection } from './selection.js';
+import { initUpdateNotice } from './update-ui.js';
 import { initStrip } from './strip.js';
 import { initKeys } from './keys.js';
 import { initHistory } from './history.js';
@@ -158,6 +159,7 @@ async function boot() {
   highlights.setActions({ edit: panel.edit, remove: panel.removeWithUndo });
   const search = initSearch({ viewer, highlights });
   initSelection({ viewer, docApi });
+  initUpdateNotice();
   initStrip({ viewer });
 
   const documents = initHistory();

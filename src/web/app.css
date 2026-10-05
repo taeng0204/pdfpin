@@ -584,3 +584,38 @@ mark.mk { padding: 0.08em 0.22em; }
 .page-error { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; z-index: 4; }
 .page-error p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
 .page-error .why { font: 11.5px var(--font-mono); color: var(--muted); max-width: 80%; overflow-wrap: anywhere; }
+
+/* One line between the bar and the paper. It is news, not an alarm: it borrows the accent for the
+   version and otherwise reads like the rest of the chrome, and it goes away for good when closed. */
+.update-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  color: var(--fg-dim);
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg));
+  border-bottom: 1px solid var(--border);
+}
+.update-notice .update-text { color: var(--fg); }
+.update-notice .update-cmd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--fg) 7%, transparent);
+  user-select: all; /* one click selects the whole command, which is the only thing to do with it */
+}
+.update-notice .update-close {
+  margin-inline-start: auto;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--fg-dim);
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+.update-notice .update-close:hover { background: color-mix(in srgb, var(--fg) 9%, transparent); color: var(--fg); }
+@media (max-width: 560px) { .update-notice .update-cmd { display: none; } }

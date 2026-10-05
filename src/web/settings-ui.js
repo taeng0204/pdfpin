@@ -146,6 +146,12 @@ export function openSettings() {
     tour.querySelector('.set-rows').appendChild(row(t('settings.tour'), tourBtn));
     body.appendChild(tour);
 
+    const updates = section(t('settings.updates'), t('settings.updateCheckHint'));
+    updates.querySelector('.set-rows').appendChild(
+      row(t('settings.updateCheck'), checkbox(s.updateCheck, (v) => save({ updateCheck: v }))),
+    );
+    body.appendChild(updates);
+
     const rule = section(t('settings.palette'), t('settings.paletteHint'));
     rule.querySelector('h3').textContent = t('settings.colorBy');
     rule.querySelector('.set-hint').textContent = s.colorBy === 'session' ? t('settings.colorBySessionHint') : t('settings.colorByTagHint');

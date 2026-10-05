@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   colorBy: 'tag',
   theme: 'light',   // the paper reads best on paper; "system" is one click away in settings
   dimPages: true,
+  updateCheck: true, // the only request pdfpin makes to the internet; see src/server/update.js
   zoom: 'fit-width',
   palette: [...COLORS],
   keys: { ...DEFAULT_KEYS },
@@ -64,6 +65,10 @@ export function mergeSettings(current, patch) {
       case 'dimPages':
         if (typeof v !== 'boolean') throw new SettingsError('dimPages must be true or false');
         next.dimPages = v;
+        break;
+      case 'updateCheck':
+        if (typeof v !== 'boolean') throw new SettingsError('updateCheck must be true or false');
+        next.updateCheck = v;
         break;
       case 'zoom': {
         const ok = v === 'fit-width' || v === 'fit-page' || (typeof v === 'number' && v >= 0.25 && v <= 4);

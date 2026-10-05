@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { Store } from './store.js';
 import { SseHub } from './sse.js';
+import { updateState } from './update.js';
 import { DocManager, ApiError } from './docs.js';
 import { SettingsStore, SettingsError } from './settings.js';
 import { lockHome } from './lock.js';
@@ -16,7 +17,9 @@ const WEB_ROOT = path.join(__dirname, '..', 'web');
 const SHARED_ROOT = path.join(__dirname, '..', 'shared');
 const require = createRequire(import.meta.url);
 const PDFJS_ROOT = path.join(path.dirname(require.resolve('pdfjs-dist/package.json')), 'build');
-export const VERSION = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8')).version;
+const PKG = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8'));
+export const VERSION = PKG.version;
+export const PKG_NAME = PKG.name;
 export const DEFAULT_PORT = 47831;
 
 export function defaultHome() {
@@ -107,6 +110,9 @@ export async function createServer({ home = defaultHome(), port = DEFAULT_PORT, 
   const viewerReadable = () => { try { return fs.statSync(path.join(WEB_ROOT, 'index.html')).isFile(); } catch { return false; } };
   route('GET', '/api/health', () => ({ ok: true, version: VERSION, pid: process.pid, home, web: viewerReadable() }));
   route('GET', '/api/settings', () => ({ settings: settings.get() }));
+  // Asked for by the viewer, never by the CLI: an agent reading our output should not have to
+  // step over a line about versions, and --json must stay exactly what it says it is.
+  route('GET', '/api/update', () => updateState({ home, name: PKG_NAME, current: VERSION, enabled: settings.get().updateCheck }));
   const touchesColors = (body) => ['colorBy', 'palette'].some((k) => body && k in body);
   route('PATCH', '/api/settings', ({ body }) => saveSettings(() => settings.update(body || {}), touchesColors(body)));
   route('DELETE', '/api/settings', () => saveSettings(() => settings.reset(), true));
