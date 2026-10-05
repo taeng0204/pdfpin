@@ -56,7 +56,9 @@ test('a bundle pdfpin did not write is reported, never replaced or removed', () 
   const home = tmpHome();
   const app = fakeBundle(home, { marked: false });
   assert.equal(status(home).state, 'modified');
-  assert.equal(install({ home }), 'modified');
+  // install answers 'unsupported' off macOS before it ever looks at what is there, so only the
+  // host that can actually build a bundle can be asked whether it refused to overwrite one.
+  if (onMac) assert.equal(install({ home }), 'modified');
   assert.equal(remove({ home }), 'modified');
   assert.ok(fs.existsSync(app), 'it is still there');
 
