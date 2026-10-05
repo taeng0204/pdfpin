@@ -104,6 +104,11 @@ one, or right-click → Open With → pdfpin, and that file opens in the viewer.
 the default PDF application. `pdfpin app` says whether it is installed and `pdfpin app remove` takes
 it out again; a bundle pdfpin did not write is reported, never replaced without `--force`.
 
+Updating pdfpin rebuilds a launcher that is already there, the way it already refreshes the agent
+skill, so `npm install -g @taeng0204/pdfpin` is the whole update and nothing is left pointing at the
+version before it. It never installs one you did not ask for; `PDFPIN_NO_APP=1` opts out of the
+rebuild as `PDFPIN_NO_SKILL=1` does for the skill.
+
 ## Where things live
 
 `~/.pdfpin` holds one JSON file per document plus your settings; `PDFPIN_HOME` moves it. Other

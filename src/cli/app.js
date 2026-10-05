@@ -200,6 +200,23 @@ export function install({ home = os.homedir(), force = false } = {}) {
   return before.state === 'absent' ? 'installed' : 'updated';
 }
 
+/**
+ * What a global install should do on its own: bring a launcher that is already there in line with
+ * the pdfpin that just landed, so updating is one npm command and nothing is left behind pointing
+ * at the old one. Every other case is left alone — an .app nobody asked for should not appear in
+ * ~/Applications because of an update, and one you edited is reported, never replaced.
+ * `PDFPIN_NO_APP=1` opts out, as `PDFPIN_NO_SKILL` does for the skill.
+ */
+export function autoUpdate({ env = process.env, home = os.homedir() } = {}) {
+  if (env.PDFPIN_NO_APP) return { skipped: 'PDFPIN_NO_APP is set' };
+  if (env.npm_config_global !== 'true') return { skipped: 'not a global install' };
+  if (!supported()) return { skipped: 'the launcher is macOS only' };
+  const before = status(home);
+  if (before.state === 'absent') return { skipped: 'no launcher is installed' };
+  if (before.state === 'modified' || before.state === 'current') return { result: before.state, app: before.app };
+  return { result: install({ home }), app: before.app };
+}
+
 /** Remove the bundle. One pdfpin did not write is left alone without --force. */
 export function remove({ home = os.homedir(), force = false } = {}) {
   const before = status(home);

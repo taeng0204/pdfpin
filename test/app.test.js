@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { status, install, remove, supported, destPath, APP_NAME, BUNDLE_ID } from '../src/cli/app.js';
+import { status, install, remove, supported, autoUpdate, destPath, APP_NAME, BUNDLE_ID } from '../src/cli/app.js';
 import { VERSION } from '../src/server/index.js';
 
 const onMac = process.platform === 'darwin';
@@ -70,6 +70,34 @@ test('an edited launcher counts as modified, so an update cannot clobber it', ()
   const launcher = path.join(destPath(home), 'Contents', 'Resources', 'launch.sh');
   fs.writeFileSync(launcher, '#!/bin/sh\n# mine now\nexit 0\n');
   assert.equal(status(home).state, 'modified');
+});
+
+test('an update only touches a launcher that is already there', () => {
+  const home = tmpHome();
+  const asGlobal = { npm_config_global: 'true' };
+  assert.ok(autoUpdate({ env: {}, home }).skipped, 'a local install is not an update');
+  assert.ok(autoUpdate({ env: { ...asGlobal, PDFPIN_NO_APP: '1' }, home }).skipped, 'opted out');
+  assert.ok(autoUpdate({ env: asGlobal, home }).skipped, 'nothing is installed here');
+  assert.equal(fs.existsSync(destPath(home)), false, 'an update never puts one in ~/Applications');
+});
+
+test('an update leaves a bundle you wrote yourself alone', { skip: !onMac && 'macOS only' }, () => {
+  const home = tmpHome();
+  fakeBundle(home, { marked: false });
+  assert.equal(autoUpdate({ env: { npm_config_global: 'true' }, home }).result, 'modified');
+  assert.equal(status(home).state, 'modified', 'still theirs');
+});
+
+test('an update rebuilds a launcher left over from an older pdfpin, and stops there', { skip: !onMac && 'macOS only' }, () => {
+  const home = tmpHome();
+  fakeBundle(home, { version: '0.0.1' });
+  assert.equal(status(home).state, 'outdated');
+
+  assert.equal(autoUpdate({ env: { npm_config_global: 'true' }, home }).result, 'updated');
+  assert.equal(status(home).state, 'current');
+  assert.ok(fs.existsSync(path.join(destPath(home), 'Contents/Resources/droplet.icns')), 'a real bundle, not a patched one');
+
+  assert.equal(autoUpdate({ env: { npm_config_global: 'true' }, home }).result, 'current', 'and the next update has nothing to do');
 });
 
 test('install builds a launchable bundle and marks it as ours', { skip: !onMac && 'macOS only' }, () => {
